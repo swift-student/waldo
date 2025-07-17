@@ -1,0 +1,30 @@
+name: Diffi
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    macOS: "13.0"
+  
+targets:
+  Diffi:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/Diffi
+    dependencies:
+      - package: ComposableArchitecture
+        product: ComposableArchitecture
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.example.Diffi
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      SWIFT_VERSION: "5.9"
+      ENABLE_HARDENED_RUNTIME: true
+      CODE_SIGN_ENTITLEMENTS: Diffi.entitlements
+      GENERATE_INFOPLIST_FILE: true
+      INFOPLIST_KEY_CFBundleDisplayName: "Diffi"
+      INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
+      INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2024"
+      
+packages:
+  ComposableArchitecture:
+    url: https://github.com/pointfreeco/swift-composable-architecture
+    from: "1.7.0"
