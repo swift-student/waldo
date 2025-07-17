@@ -1,6 +1,5 @@
-# Xcode
-*.xcodeproj/xcuserdata/
-*.xcworkspace/xcuserdata/
+# Generated Xcode project
+*.xcodeproj/
 
 # Build generated
 .build/
