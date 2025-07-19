@@ -4,23 +4,26 @@ import PackageDescription
 let package = Package(
     name: "Diffi",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v14),
     ],
     products: [
-        .executable(
+        .library(
             name: "Diffi",
             targets: ["Diffi"]
-        )
+        ),
     ],
     dependencies: [
-        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.7.0")
+        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.7.0"),
     ],
     targets: [
-        .executableTarget(
+        .target(
             name: "Diffi",
             dependencies: [
-                .product(name: "ComposableArchitecture", package: "swift-composable-architecture")
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                "Clibgit2",
             ]
-        )
+        ),
+        .binaryTarget(name: "Clibgit2", path: "Sources/Clibgit2.xcframework"),
     ]
 )
+
