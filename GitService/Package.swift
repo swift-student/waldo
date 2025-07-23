@@ -2,38 +2,35 @@
 import PackageDescription
 
 let package = Package(
-    name: "Diffi",
+    name: "GitService",
     platforms: [
         .macOS(.v14),
     ],
     products: [
         .library(
-            name: "Diffi",
-            targets: ["Diffi"]
+            name: "GitService",
+            targets: ["GitService"]
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.20.2"),
         .package(url: "https://github.com/swift-student/swift-print-debug", from: "0.1.1"),
-        .package(path: "./GitService"),
     ],
     targets: [
         .target(
-            name: "Diffi",
+            name: "GitService",
             dependencies: [
-                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "PrintDebug", package: "swift-print-debug"),
-                .product(name: "GitService", package: "GitService"),
-            ],
+                "Clibgit2",
+            ]
+        ),
+        .testTarget(
+            name: "GitServiceTests",
+            dependencies: ["GitService"],
             linkerSettings: [
                 .linkedLibrary("z"),
                 .linkedLibrary("iconv")
             ]
         ),
-        .testTarget(
-            name: "DiffiTests",
-            dependencies: ["Diffi"]
-        ),
+        .binaryTarget(name: "Clibgit2", path: "Sources/Clibgit2.xcframework"),
     ]
 )
-

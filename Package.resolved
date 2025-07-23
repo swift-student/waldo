@@ -100,6 +100,15 @@
       }
     },
     {
+      "identity" : "swift-print-debug",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swift-student/swift-print-debug",
+      "state" : {
+        "revision" : "b3f38bc4ff7300ea72ff117af82ab3d56b1b1e42",
+        "version" : "0.1.1"
+      }
+    },
+    {
       "identity" : "swift-sharing",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-sharing",
@@ -113,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "f99ae8aa18f0cf0d53481901f88a0991dc3bd4a2",
-        "version" : "601.0.1"
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
       }
     },
     {
