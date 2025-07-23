@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Git.swift
 //  Diffi
 //
 //  Created by Shawn Gee on 7/21/25.
@@ -10,25 +10,24 @@ import Foundation
 
 typealias GitOID = git_oid
 
-enum Git {
-
+public enum Git {
     // MARK: - Library
 
-    static func libgit2Init() throws(GitServiceError) {
-        if let errorCode = GitErrorCode(returnCode: git_libgit2_init()) {
+    static func libgit2Init() throws(GitError) {
+        if let errorCode = Clibgit2ErrorCode(returnCode: git_libgit2_init()) {
             throw .libraryFailedToInitialize(.init(code: errorCode))
         }
     }
 
-    static func libgit2Shutdown() throws(GitServiceError) {
-        if let errorCode = GitErrorCode(returnCode: git_libgit2_shutdown()) {
+    static func libgit2Shutdown() throws(GitError) {
+        if let errorCode = Clibgit2ErrorCode(returnCode: git_libgit2_shutdown()) {
             throw .libraryFailedToShutdown(.init(code: errorCode))
         }
     }
 
     // MARK: - Repository
 
-    static func repositoryOpen(url: URL) throws(GitServiceError) -> OpaquePointer {
+    static func repositoryOpen(url: URL) throws(GitError) -> OpaquePointer {
         var repo: OpaquePointer?
 
         let returnCode = url.withUnsafeFileSystemRepresentation { url in
@@ -37,7 +36,7 @@ enum Git {
 
         guard let repo else {
             throw .failedToOpenRepo(
-                GitError(code: GitErrorCode(returnCode: returnCode) ?? .unknown)
+                Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .unknown)
             )
         }
 
@@ -51,39 +50,39 @@ enum Git {
     // MARK: - Reference Resolution
 
     // For revision expressions like "HEAD~1", "main@{2.days.ago}", etc.
-    static func revparseSingle(repo: OpaquePointer, revspec: String) throws(GitServiceError) -> GitOID {
+    static func revparseSingle(repo: OpaquePointer, revspec: String) throws(GitError) -> GitOID {
         var obj: OpaquePointer?
-        
+
         let returnCode = git_revparse_single(&obj, repo, revspec)
-        defer { 
+        defer {
             if let obj = obj {
-                git_object_free(obj) 
+                git_object_free(obj)
             }
         }
 
         guard let obj = obj else {
             throw .failedToResolveReference(
-                GitError(code: GitErrorCode(returnCode: returnCode) ?? .unknown)
+                Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .unknown)
             )
         }
-        
+
         return git_object_id(obj).pointee
     }
 
     // MARK: - Commit Operations
 
-    static func commitLookup(repo: OpaquePointer, oid: GitOID) throws(GitServiceError) -> OpaquePointer {
+    static func commitLookup(repo: OpaquePointer, oid: GitOID) throws(GitError) -> OpaquePointer {
         var commit: OpaquePointer?
         var oid = oid
-        
+
         let returnCode = git_commit_lookup(&commit, repo, &oid)
-        
+
         guard let commit else {
             throw .failedToLookupCommit(
-                GitError(code: GitErrorCode(returnCode: returnCode) ?? .unknown)
+                Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .unknown)
             )
         }
-        
+
         return commit
     }
 
@@ -91,17 +90,17 @@ enum Git {
         git_commit_free(commit)
     }
 
-    static func commitTree(commit: OpaquePointer) throws(GitServiceError) -> OpaquePointer {
+    static func commitTree(commit: OpaquePointer) throws(GitError) -> OpaquePointer {
         var tree: OpaquePointer?
-        
+
         let returnCode = git_commit_tree(&tree, commit)
-        
+
         guard let tree else {
             throw .failedToGetCommitTree(
-                GitError(code: GitErrorCode(returnCode: returnCode) ?? .unknown)
+                Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .unknown)
             )
         }
-        
+
         return tree
     }
 
@@ -113,17 +112,17 @@ enum Git {
 
     // MARK: - Diff Operations
 
-    static func diffTreeToTree(repo: OpaquePointer, oldTree: OpaquePointer?, newTree: OpaquePointer?) throws(GitServiceError) -> OpaquePointer {
+    static func diffTreeToTree(repo: OpaquePointer, oldTree: OpaquePointer?, newTree: OpaquePointer?) throws(GitError) -> OpaquePointer {
         var diff: OpaquePointer?
-        
+
         let returnCode = git_diff_tree_to_tree(&diff, repo, oldTree, newTree, nil)
-        
+
         guard let diff else {
             throw .failedToCreateDiff(
-                GitError(code: GitErrorCode(returnCode: returnCode) ?? .unknown)
+                Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .unknown)
             )
         }
-        
+
         return diff
     }
 
@@ -140,14 +139,15 @@ enum Git {
     }
 
     // MARK: - Helper for Delta Status
+
     static func deltaStatusToString(_ status: git_delta_t) -> String {
         switch status {
         case GIT_DELTA_UNMODIFIED:
-            return " "  // Unchanged (shouldn't appear in typical diff)
+            return " " // Unchanged (shouldn't appear in typical diff)
         case GIT_DELTA_ADDED:
             return "A"
         case GIT_DELTA_DELETED:
-            return "D" 
+            return "D"
         case GIT_DELTA_MODIFIED:
             return "M"
         case GIT_DELTA_RENAMED:

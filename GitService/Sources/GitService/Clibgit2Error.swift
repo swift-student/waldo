@@ -1,5 +1,5 @@
 //
-//  GitError.swift
+//  Clibgit2Error.swift
 //  Diffi
 //
 //  Created by Shawn Gee on 7/21/25.
@@ -8,11 +8,11 @@
 import Clibgit2
 import Foundation
 
-struct GitError: Error, CustomDebugStringConvertible {
-    let code: GitErrorCode
+struct Clibgit2Error: Error, CustomDebugStringConvertible {
+    let code: Clibgit2ErrorCode
     let errorMessage: String?
 
-    init(code: GitErrorCode) {
+    init(code: Clibgit2ErrorCode) {
         self.code = code
 
         if let error = git_error_last(),
@@ -20,7 +20,7 @@ struct GitError: Error, CustomDebugStringConvertible {
         {
             self.errorMessage = errorMessage
         } else {
-            self.errorMessage = nil
+            errorMessage = nil
         }
     }
 
@@ -33,7 +33,7 @@ struct GitError: Error, CustomDebugStringConvertible {
     }
 }
 
-enum GitErrorCode: Int32 {
+enum Clibgit2ErrorCode: Int32 {
     private static let ok: Int32 = 0
 
     /// An error occurred; call `git_error_last` for more information.
