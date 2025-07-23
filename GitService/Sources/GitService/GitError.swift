@@ -1,23 +1,11 @@
 //
-//  GitService.swift
+//  GitError.swift
 //  Diffi
 //
 //  Created by Shawn Gee on 7/17/25.
 //
 
 import Clibgit2
-import Foundation
-import PrintDebug
-
-enum GitLibrary {
-    static func initialize() throws {
-        try Git.libgit2Init()
-    }
-
-    static func shutdown() throws {
-        try Git.libgit2Shutdown()
-    }
-}
 
 enum GitError: Error, CustomDebugStringConvertible {
     case libraryFailedToInitialize(Clibgit2Error)

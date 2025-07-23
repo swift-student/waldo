@@ -24,10 +24,11 @@ struct Clibgit2Error: Error, CustomDebugStringConvertible {
         }
     }
 
+    // TODO: Improve formatting
     var debugDescription: String {
-        var message = "Error code \(code.rawValue): \(code.description)."
+        var message = "Error code \(code.rawValue): \(code.description)"
         if let errorMessage {
-            message += " " + errorMessage
+            message += ": " + errorMessage
         }
         return message
     }
