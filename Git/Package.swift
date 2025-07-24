@@ -2,14 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "GitService",
+    name: "Git",
     platforms: [
         .macOS(.v14),
     ],
     products: [
         .library(
-            name: "GitService",
-            targets: ["GitService"]
+            name: "Git",
+            targets: ["Git"]
         ),
     ],
     dependencies: [
@@ -17,15 +17,15 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "GitService",
+            name: "Git",
             dependencies: [
                 .product(name: "PrintDebug", package: "swift-print-debug"),
                 "Clibgit2",
             ]
         ),
         .testTarget(
-            name: "GitServiceTests",
-            dependencies: ["GitService"],
+            name: "GitTests",
+            dependencies: ["Git"],
             linkerSettings: [
                 .linkedLibrary("z"),
                 .linkedLibrary("iconv")

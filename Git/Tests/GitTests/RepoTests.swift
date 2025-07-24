@@ -1,12 +1,12 @@
 //
 //  RepoTests.swift
-//  GitServiceTests
+//  GitTests
 //
 //  Created by Shawn Gee on 7/21/25.
 //
 
 import Foundation
-@testable import GitService
+@testable import Git
 import PrintDebug
 import Testing
 

@@ -15,7 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.20.2"),
         .package(url: "https://github.com/swift-student/swift-print-debug", from: "0.1.1"),
-        .package(path: "./GitService"),
+        .package(path: "./Git"),
     ],
     targets: [
         .target(
@@ -23,7 +23,7 @@ let package = Package(
             dependencies: [
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "PrintDebug", package: "swift-print-debug"),
-                .product(name: "GitService", package: "GitService"),
+                .product(name: "Git", package: "Git"),
             ],
             linkerSettings: [
                 .linkedLibrary("z"),
