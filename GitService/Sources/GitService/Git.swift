@@ -53,32 +53,4 @@ extension Git {
         return git_object_id(obj).pointee
     }
 
-    static func deltaStatusToString(_ status: git_delta_t) -> String {
-        switch status {
-        case GIT_DELTA_UNMODIFIED:
-            return " " // Unchanged (shouldn't appear in typical diff)
-        case GIT_DELTA_ADDED:
-            return "A"
-        case GIT_DELTA_DELETED:
-            return "D"
-        case GIT_DELTA_MODIFIED:
-            return "M"
-        case GIT_DELTA_RENAMED:
-            return "R"
-        case GIT_DELTA_COPIED:
-            return "C"
-        case GIT_DELTA_IGNORED:
-            return "!"
-        case GIT_DELTA_UNTRACKED:
-            return "?"
-        case GIT_DELTA_TYPECHANGE:
-            return "T"
-        case GIT_DELTA_UNREADABLE:
-            return "X"
-        case GIT_DELTA_CONFLICTED:
-            return "U"
-        default:
-            return "?"
-        }
-    }
 }

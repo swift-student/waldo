@@ -13,7 +13,7 @@ public extension Git {
             Self.free(repo)
         }
 
-        func diffNameStatus(from: String, to: String) throws -> [(status: String, path: String)] {
+        func diffNameStatus(from: String, to: String) throws -> [Git.Diff.FileChange] {
             let fromOID = try Git.revparseSingle(repo: repo, revspec: from)
             let toOID = try Git.revparseSingle(repo: repo, revspec: to)
 
@@ -26,19 +26,15 @@ public extension Git {
             let diff = try Git.Diff.treeToTree(repo: repo, oldTree: fromTree, newTree: toTree)
             defer { Git.Diff.free(diff) }
 
-            // 4. Iterate through the diff deltas to extract name-status info
             let numDeltas = Git.Diff.numDeltas(diff)
-            var results: [(status: String, path: String)] = []
 
-            for i in 0 ..< numDeltas {
-                guard let delta = Git.Diff.getDelta(diff, index: i) else { continue }
+            return (0 ..< numDeltas).compactMap { index in
+                guard let delta = Git.Diff.getDelta(diff, index: index) else { return nil }
 
-                let status = Git.deltaStatusToString(delta.pointee.status)
+                let status = Git.Diff.Status(delta.pointee.status)
                 let path = String(cString: delta.pointee.new_file.path)
-                results.append((status: status, path: path))
+                return Git.Diff.FileChange(status: status, path: path)
             }
-
-            return results
         }
 
         private func getTreeFromCommit(oid: GitOID) throws -> OpaquePointer {

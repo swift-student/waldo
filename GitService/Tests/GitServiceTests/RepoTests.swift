@@ -7,10 +7,11 @@
 
 import Foundation
 @testable import GitService
+import PrintDebug
 import Testing
 
 @Suite("Git Repository with Temporary Repo")
-struct GitRepositoryTests {
+struct GitRepoTests {
     // Helper method to create a test environment
     static func withTestRepo<T>(
         _ test: (Git.Repo, URL) throws -> T
@@ -21,18 +22,13 @@ struct GitRepositoryTests {
 
         defer {
             try? FileManager.default.removeItem(at: tempDir)
-            try? GitLibrary.shutdown()
+            try? Git.shutdown()
         }
 
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-
-        // Initialize libgit2
-        try GitLibrary.initialize()
-
-        // Create a real git repo for testing
         try setUpTestRepo(at: tempDir)
 
-        // Now open with your wrapper
+        try Git.initialize()
         let repo = try Git.Repo(url: tempDir)
 
         return try test(repo, tempDir)
@@ -45,10 +41,10 @@ struct GitRepositoryTests {
 
             #expect(changes.count == 2)
 
-            // Check that we have the expected changes
-            let statusDict = Dictionary(uniqueKeysWithValues: changes.map { ($0.path, $0.status) })
-            #expect(statusDict["file1.txt"] == "M") // Modified
-            #expect(statusDict["file2.txt"] == "A") // Added
+            #expect(changes[0].path == "file1.txt")
+            #expect(changes[0].status == .modified)
+            #expect(changes[1].path == "file2.txt")
+            #expect(changes[1].status == .added)
         }
     }
 
@@ -64,7 +60,6 @@ struct GitRepositoryTests {
     @Test("Diff with deleted file")
     func diffNameStatusWithDeletedFile() throws {
         try Self.withTestRepo { repo, tempDir in
-            // Create a third commit that deletes a file
             try Self.deleteFile("file2.txt", in: tempDir)
             try Self.runGitCommand(["add", "."], in: tempDir)
             try Self.runGitCommand(["commit", "-m", "Delete file2"], in: tempDir)
@@ -72,15 +67,14 @@ struct GitRepositoryTests {
             let changes = try repo.diffNameStatus(from: "HEAD~1", to: "HEAD")
 
             #expect(changes.count == 1)
-            let statusDict = Dictionary(uniqueKeysWithValues: changes.map { ($0.path, $0.status) })
-            #expect(statusDict["file2.txt"] == "D") // Deleted
+            #expect(changes[0].path == "file2.txt")
+            #expect(changes[0].status == .deleted)
         }
     }
 
     @Test("Invalid reference throws error")
     func invalidReference() throws {
         try Self.withTestRepo { repo, _ in
-            // Test error handling with invalid reference
             #expect(throws: GitError.self) {
                 try repo.diffNameStatus(from: "invalid-ref", to: "HEAD")
             }
