@@ -97,6 +97,33 @@ struct GitRepoTests {
         }
     }
 
+    @Test("Diff working tree with staged and unstaged changes")
+    func diffNameStatusWorkingTree() throws {
+        try Self.withTestRepo { repo, tempDir in
+            // Modify existing file (unstaged)
+            try Self.writeToFile("file1.txt", content: "Modified content", in: tempDir)
+
+            // Add new file and stage it
+            try Self.writeToFile("file3.txt", content: "New file", in: tempDir)
+            try Self.runGitCommand(["add", "file3.txt"], in: tempDir)
+
+            // Stage a modification to file2, then modify it again (both staged and unstaged)
+            try Self.writeToFile("file2.txt", content: "Staged change", in: tempDir)
+            try Self.runGitCommand(["add", "file2.txt"], in: tempDir)
+            try Self.writeToFile("file2.txt", content: "Staged + unstaged change", in: tempDir)
+
+            let changes = try repo.diffNameStatusWorkingTree()
+
+            #expect(changes.count == 3)
+            #expect(changes[0].path == "file1.txt")
+            #expect(changes[0].status == .modified)
+            #expect(changes[1].path == "file2.txt")
+            #expect(changes[1].status == .modified)
+            #expect(changes[2].path == "file3.txt")
+            #expect(changes[2].status == .added)
+        }
+    }
+
     // MARK: - Static Helper Methods
 
     static func setUpTestRepo(at tempDir: URL) throws {
@@ -108,18 +135,18 @@ struct GitRepoTests {
         try runGitCommand(["config", "user.email", "test@example.com"], in: tempDir)
 
         // Create initial commit
-        try createFile("file1.txt", content: "Hello", in: tempDir)
+        try writeToFile("file1.txt", content: "Hello", in: tempDir)
         try runGitCommand(["add", "file1.txt"], in: tempDir)
         try runGitCommand(["commit", "-m", "Initial commit"], in: tempDir)
 
         // Create second commit with changes
-        try createFile("file2.txt", content: "World", in: tempDir)
-        try createFile("file1.txt", content: "Hello Modified", in: tempDir) // Modify existing file
+        try writeToFile("file2.txt", content: "World", in: tempDir)
+        try writeToFile("file1.txt", content: "Hello Modified", in: tempDir) // Modify existing file
         try runGitCommand(["add", "."], in: tempDir)
         try runGitCommand(["commit", "-m", "Second commit"], in: tempDir)
     }
 
-    static func createFile(_ name: String, content: String, in directory: URL) throws {
+    static func writeToFile(_ name: String, content: String, in directory: URL) throws {
         let url = directory.appendingPathComponent(name)
         try content.write(to: url, atomically: true, encoding: .utf8)
     }

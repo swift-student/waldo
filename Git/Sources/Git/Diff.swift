@@ -4,7 +4,7 @@ public extension Git {
     enum Diff {
         typealias Delta = git_diff_delta
 
-        public enum Status {
+        public enum Status: Equatable {
             case unmodified
             case added
             case deleted
@@ -77,15 +77,29 @@ public extension Git {
             }
         }
 
-        public struct FileChange {
-            let status: Status
-            let path: String
+        public struct FileChange: Equatable {
+            public let status: Status
+            public let path: String
         }
 
         static func treeToTree(repo: OpaquePointer, oldTree: OpaquePointer?, newTree: OpaquePointer?) throws(GitError) -> OpaquePointer {
             var diff: OpaquePointer?
 
             let returnCode = git_diff_tree_to_tree(&diff, repo, oldTree, newTree, nil)
+
+            guard let diff else {
+                throw .failedToCreateDiff(
+                    Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .unknown)
+                )
+            }
+
+            return diff
+        }
+
+        static func treeToWorkingDirectory(repo: OpaquePointer, oldTree: OpaquePointer?) throws(GitError) -> OpaquePointer {
+            var diff: OpaquePointer?
+
+            let returnCode = git_diff_tree_to_workdir_with_index(&diff, repo, oldTree, nil)
 
             guard let diff else {
                 throw .failedToCreateDiff(

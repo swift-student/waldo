@@ -10,7 +10,20 @@ public struct AppView: View {
 
     public var body: some View {
         if let folder = store.repoFolder {
-            Text("Folder selected: \(folder.path())")
+            NavigationSplitView {
+                List {
+                    if let fileChanges = store.fileChanges {
+                        ForEach(fileChanges, id: \.path) { fileChange in
+                            Text(fileChange.path)
+                        }
+                    } else {
+                        Text("No changes")
+                    }
+                }
+                .navigationTitle("Files")
+            } detail: {
+                Text("Select a file to view details")
+            }
         } else {
             VStack {
                 Text("Select a Git Repository")
@@ -30,7 +43,6 @@ public struct AppView: View {
                     store.send(.failurePickingFolder(error))
                 }
             }
-
         }
     }
 }

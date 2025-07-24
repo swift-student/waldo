@@ -5,7 +5,7 @@ public extension Git {
     class Repo {
         let repo: OpaquePointer
 
-        init(url: URL) throws {
+        public init(url: URL) throws {
             repo = try Self.open(url: url)
         }
 
@@ -13,7 +13,7 @@ public extension Git {
             Self.free(repo)
         }
 
-        func diffNameStatus(from: String, to: String) throws -> [Git.Diff.FileChange] {
+        public func diffNameStatus(from: String, to: String) throws -> [Git.Diff.FileChange] {
             let fromOID = try Git.revparseSingle(repo: repo, revspec: from)
             let toOID = try Git.revparseSingle(repo: repo, revspec: to)
 
@@ -24,6 +24,26 @@ public extension Git {
             defer { Git.Tree.free(toTree) }
 
             let diff = try Git.Diff.treeToTree(repo: repo, oldTree: fromTree, newTree: toTree)
+            defer { Git.Diff.free(diff) }
+
+            let numDeltas = Git.Diff.numDeltas(diff)
+
+            return (0 ..< numDeltas).compactMap { index in
+                guard let delta = Git.Diff.getDelta(diff, index: index) else { return nil }
+
+                let status = Git.Diff.Status(delta.pointee.status)
+                let path = String(cString: delta.pointee.new_file.path)
+                return Git.Diff.FileChange(status: status, path: path)
+            }
+        }
+
+        public func diffNameStatusWorkingTree() throws -> [Git.Diff.FileChange] {
+            let headOID = try Git.revparseSingle(repo: repo, revspec: "HEAD")
+
+            let headTree = try getTreeFromCommit(oid: headOID)
+            defer { Git.Tree.free(headTree) }
+
+            let diff = try Git.Diff.treeToWorkingDirectory(repo: repo, oldTree: headTree)
             defer { Git.Diff.free(diff) }
 
             let numDeltas = Git.Diff.numDeltas(diff)

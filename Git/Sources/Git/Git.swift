@@ -11,11 +11,11 @@ import Foundation
 typealias GitOID = git_oid
 
 public enum Git {
-    static func initialize() throws {
+    public static func initialize() throws {
         try Git.libgit2Init()
     }
 
-    static func shutdown() throws {
+    public static func shutdown() throws {
         try Git.libgit2Shutdown()
     }
 }
@@ -52,5 +52,4 @@ extension Git {
 
         return git_object_id(obj).pointee
     }
-
 }

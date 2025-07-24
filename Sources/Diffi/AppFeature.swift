@@ -1,6 +1,7 @@
 import ComposableArchitecture
+import Git
+import PrintDebug
 import SwiftUI
-
 
 @Reducer
 public struct AppFeature {
@@ -9,6 +10,7 @@ public struct AppFeature {
         public init() {}
         var showingFolderPicker = false
         var repoFolder: URL?
+        var fileChanges: [Git.Diff.FileChange]?
     }
 
     public enum Action {
@@ -19,7 +21,10 @@ public struct AppFeature {
 
     @Dependency(\.fileService.fileExists) var fileExists
 
-    public init() {}
+    public init() {
+        // TODO: Where should this go and what should we do if it doesn't initialize. Also need to shutdown.
+        try? Git.initialize()
+    }
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -42,6 +47,12 @@ public struct AppFeature {
                 }
 
                 state.repoFolder = folder
+
+                // We need to do a git diff once we have a folder
+                // Really that needs to happen on a timer, but let's start with doing it here
+                let repo = try? Git.Repo(url: folder)
+                state.fileChanges = try? repo?.diffNameStatusWorkingTree()
+
                 return .none
             case let .failurePickingFolder(error):
                 // TODO: Handle failure
