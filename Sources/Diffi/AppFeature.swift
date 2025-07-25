@@ -8,6 +8,7 @@ public struct AppFeature {
     @ObservableState
     public struct State: Equatable {
         public init() {}
+        var filePickerFeature = FilePickerFeature.State()
         var showingFolderPicker = false
         var repoFolder: URL?
         var fileChanges: [Git.Diff.FileChange]?
@@ -17,6 +18,7 @@ public struct AppFeature {
         case showingFolderPickerChanged(Bool)
         case userPickedFolder(URL)
         case failurePickingFolder(Error)
+        case filePickerFeature(FilePickerFeature.Action)
     }
 
     @Dependency(\.fileService.fileExists) var fileExists
@@ -27,6 +29,9 @@ public struct AppFeature {
     }
 
     public var body: some ReducerOf<Self> {
+        Scope(state: \.filePickerFeature, action: \.filePickerFeature) {
+            FilePickerFeature()
+        }
         Reduce { state, action in
             switch action {
             case let .showingFolderPickerChanged(shouldShow):
@@ -52,11 +57,14 @@ public struct AppFeature {
                 // Really that needs to happen on a timer, but let's start with doing it here
                 let repo = try? Git.Repo(url: folder)
                 state.fileChanges = try? repo?.diffNameStatusWorkingTree()
+                state.filePickerFeature.files = state.fileChanges ?? []
 
                 return .none
             case let .failurePickingFolder(error):
                 // TODO: Handle failure
                 print(error)
+                return .none
+            case .filePickerFeature:
                 return .none
             }
         }

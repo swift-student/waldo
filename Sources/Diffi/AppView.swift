@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Git
 import SwiftUI
 
 public struct AppView: View {
@@ -9,39 +10,39 @@ public struct AppView: View {
     }
 
     public var body: some View {
-        if let folder = store.repoFolder {
+        if store.repoFolder != nil {
             NavigationSplitView {
-                List {
-                    if let fileChanges = store.fileChanges {
-                        ForEach(fileChanges, id: \.path) { fileChange in
-                            Text(fileChange.path)
-                        }
-                    } else {
-                        Text("No changes")
-                    }
-                }
-                .navigationTitle("Files")
+                FilePicker(
+                    store: store.scope(
+                        state: \.filePickerFeature,
+                        action: \.filePickerFeature
+                    )
+                )
             } detail: {
                 Text("Select a file to view details")
             }
         } else {
-            VStack {
-                Text("Select a Git Repository")
-                Button("Choose Folder") {
-                    store.send(.showingFolderPickerChanged(true))
-                }
+            folderChooser
+        }
+    }
+
+    private var folderChooser: some View {
+        VStack {
+            Text("Select a Git Repository")
+            Button("Choose Folder") {
+                store.send(.showingFolderPickerChanged(true))
             }
-            // TODO: Instrument this and see why it takes so long to show this
-            .fileImporter(
-                isPresented: $store.showingFolderPicker.sending(\.showingFolderPickerChanged),
-                allowedContentTypes: [.folder]
-            ) { result in
-                switch result {
-                case let .success(folder):
-                    store.send(.userPickedFolder(folder))
-                case let .failure(error):
-                    store.send(.failurePickingFolder(error))
-                }
+        }
+        // TODO: Instrument this and see why it takes so long to show this
+        .fileImporter(
+            isPresented: $store.showingFolderPicker.sending(\.showingFolderPickerChanged),
+            allowedContentTypes: [.folder]
+        ) { result in
+            switch result {
+            case let .success(folder):
+                store.send(.userPickedFolder(folder))
+            case let .failure(error):
+                store.send(.failurePickingFolder(error))
             }
         }
     }

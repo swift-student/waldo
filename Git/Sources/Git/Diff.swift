@@ -77,9 +77,10 @@ public extension Git {
             }
         }
 
-        public struct FileChange: Equatable {
+        public struct FileChange: Hashable, Equatable, Identifiable {
             public let status: Status
             public let path: String
+            public var id: String { path }
         }
 
         static func treeToTree(repo: OpaquePointer, oldTree: OpaquePointer?, newTree: OpaquePointer?) throws(GitError) -> OpaquePointer {
