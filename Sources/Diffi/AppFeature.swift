@@ -57,7 +57,7 @@ public struct AppFeature {
                 // Really that needs to happen on a timer, but let's start with doing it here
                 let repo = try? Git.Repo(url: folder)
                 state.fileChanges = try? repo?.diffNameStatusWorkingTree()
-                state.filePickerFeature.files = state.fileChanges ?? []
+                state.filePickerFeature.files = (state.fileChanges ?? []).map { PickableFile(from: $0) }
 
                 return .none
             case let .folderPickerFeature(.failurePickingFolder(error)):

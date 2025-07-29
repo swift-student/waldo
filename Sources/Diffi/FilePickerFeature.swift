@@ -2,14 +2,32 @@ import ComposableArchitecture
 import Git
 import SwiftUI
 
+public struct PickableFile: Hashable, Equatable, Identifiable {
+    public let id: String
+    public let path: String
+    public let status: Git.Diff.Status
+    
+    public init(path: String, status: Git.Diff.Status) {
+        self.path = path
+        self.status = status
+        self.id = path
+    }
+    
+    public init(from fileChange: Git.Diff.FileChange) {
+        self.path = fileChange.path
+        self.status = fileChange.status
+        self.id = fileChange.id
+    }
+}
+
 @Reducer
 public struct FilePickerFeature {
     @ObservableState
     public struct State: Equatable {
-        public var files: [Git.Diff.FileChange]
-        public var selectedFile: Git.Diff.FileChange?
+        public var files: [PickableFile]
+        public var selectedFile: PickableFile?
         
-        public init(files: [Git.Diff.FileChange] = [], selectedFile: Git.Diff.FileChange? = nil) {
+        public init(files: [PickableFile] = [], selectedFile: PickableFile? = nil) {
             self.files = files
             self.selectedFile = selectedFile
         }
@@ -18,7 +36,7 @@ public struct FilePickerFeature {
     public enum Action {
         case navigateUp
         case navigateDown
-        case userSelectedFile(Git.Diff.FileChange?)
+        case userSelectedFile(PickableFile?)
     }
     
     public init() {}
