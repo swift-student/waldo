@@ -11,7 +11,6 @@ public struct AppFeature {
         var filePickerFeature = FilePickerFeature.State()
         var folderPickerFeature = FolderPickerFeature.State()
         var repoFolder: URL?
-        var fileChanges: [Git.Diff.FileChange]?
     }
 
     public enum Action {
@@ -56,8 +55,8 @@ public struct AppFeature {
                 // We need to do a git diff once we have a folder
                 // Really that needs to happen on a timer, but let's start with doing it here
                 let repo = try? Git.Repo(url: folder)
-                state.fileChanges = try? repo?.diffNameStatusWorkingTree()
-                state.filePickerFeature.files = (state.fileChanges ?? []).map { PickableFile(from: $0) }
+                let fileChanges = (try? repo?.diffNameStatusWorkingTree()) ?? []
+                state.filePickerFeature.files = fileChanges.map { PickableFile(from: $0) }
 
                 return .none
             case let .folderPickerFeature(.failurePickingFolder(error)):
