@@ -9,16 +9,14 @@ public struct AppFeature {
     public struct State: Equatable {
         public init() {}
         var filePickerFeature = FilePickerFeature.State()
-        var showingFolderPicker = false
+        var folderPickerFeature = FolderPickerFeature.State()
         var repoFolder: URL?
         var fileChanges: [Git.Diff.FileChange]?
     }
 
     public enum Action {
-        case showingFolderPickerChanged(Bool)
-        case userPickedFolder(URL)
-        case failurePickingFolder(Error)
         case filePickerFeature(FilePickerFeature.Action)
+        case folderPickerFeature(FolderPickerFeature.Action)
     }
 
     @Dependency(\.fileService.fileExists) var fileExists
@@ -32,12 +30,14 @@ public struct AppFeature {
         Scope(state: \.filePickerFeature, action: \.filePickerFeature) {
             FilePickerFeature()
         }
+        Scope(state: \.folderPickerFeature, action: \.folderPickerFeature) {
+            FolderPickerFeature()
+        }
         Reduce { state, action in
             switch action {
-            case let .showingFolderPickerChanged(shouldShow):
-                state.showingFolderPicker = shouldShow
+            case .filePickerFeature:
                 return .none
-            case let .userPickedFolder(folder):
+            case let .folderPickerFeature(.userPickedFolder(folder)):
                 guard folder.startAccessingSecurityScopedResource() else {
                     // TODO: Handle this
                     return .none
@@ -60,11 +60,11 @@ public struct AppFeature {
                 state.filePickerFeature.files = state.fileChanges ?? []
 
                 return .none
-            case let .failurePickingFolder(error):
+            case let .folderPickerFeature(.failurePickingFolder(error)):
                 // TODO: Handle failure
                 print(error)
                 return .none
-            case .filePickerFeature:
+            case .folderPickerFeature:
                 return .none
             }
         }
