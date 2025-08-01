@@ -20,7 +20,7 @@ struct FolderPicker: View {
             case let .success(folder):
                 store.send(.userPickedFolder(folder))
             case let .failure(error):
-                store.send(.failurePickingFolder(error))
+                store.send(.failurePickingFolder(FolderPickerFeature.PickerError(error)))
             }
         }
     }

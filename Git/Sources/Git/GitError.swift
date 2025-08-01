@@ -7,7 +7,7 @@
 
 import Clibgit2
 
-enum GitError: Error, CustomDebugStringConvertible {
+public enum GitError: Error, Equatable, CustomDebugStringConvertible {
     case libraryFailedToInitialize(Clibgit2Error)
     case libraryFailedToShutdown(Clibgit2Error)
     case failedToOpenRepo(Clibgit2Error)
@@ -16,7 +16,7 @@ enum GitError: Error, CustomDebugStringConvertible {
     case failedToGetCommitTree(Clibgit2Error)
     case failedToCreateDiff(Clibgit2Error)
 
-    var debugDescription: String {
+    public var debugDescription: String {
         switch self {
         case let .libraryFailedToInitialize(error):
             "Library failed to initialize: \(error)"

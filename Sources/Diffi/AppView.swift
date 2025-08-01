@@ -10,7 +10,7 @@ public struct AppView: View {
     }
 
     public var body: some View {
-        if store.repoFolder != nil {
+        if store.diffFeature.repoFolder != nil {
             NavigationSplitView {
                 FilePicker(
                     store: store.scope(

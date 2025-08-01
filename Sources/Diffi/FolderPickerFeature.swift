@@ -3,6 +3,13 @@ import SwiftUI
 
 @Reducer
 public struct FolderPickerFeature {
+    public enum PickerError: Error, Equatable {
+        case folderPickingFailed(String)
+        
+        init(_ error: Error) {
+            self = .folderPickingFailed(error.localizedDescription)
+        }
+    }
     @ObservableState
     public struct State: Equatable {
         public var showingFolderPicker = false
@@ -10,10 +17,10 @@ public struct FolderPickerFeature {
         public init() {}
     }
 
-    public enum Action {
+    public enum Action: Equatable {
         case showingFolderPickerChanged(Bool)
         case userPickedFolder(URL)
-        case failurePickingFolder(Error)
+        case failurePickingFolder(PickerError)
     }
 
     public init() {}

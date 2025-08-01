@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 import Git
 import PrintDebug
 import SwiftUI
@@ -7,18 +8,19 @@ import SwiftUI
 public struct AppFeature {
     @ObservableState
     public struct State: Equatable {
-        public init() {}
         var filePickerFeature = FilePickerFeature.State()
         var folderPickerFeature = FolderPickerFeature.State()
-        var repoFolder: URL?
+        var diffFeature = DiffFeature.State()
     }
 
-    public enum Action {
+    public enum Action: Equatable {
         case filePickerFeature(FilePickerFeature.Action)
         case folderPickerFeature(FolderPickerFeature.Action)
+        case diffFeature(DiffFeature.Action)
     }
 
     @Dependency(\.fileService.fileExists) var fileExists
+    @Dependency(\.gitService) var gitService
 
     public init() {
         // TODO: Where should this go and what should we do if it doesn't initialize. Also need to shutdown.
@@ -32,10 +34,14 @@ public struct AppFeature {
         Scope(state: \.folderPickerFeature, action: \.folderPickerFeature) {
             FolderPickerFeature()
         }
+        Scope(state: \.diffFeature, action: \.diffFeature) {
+            DiffFeature()
+        }
         Reduce { state, action in
             switch action {
             case .filePickerFeature:
                 return .none
+
             case let .folderPickerFeature(.userPickedFolder(folder)):
                 guard folder.startAccessingSecurityScopedResource() else {
                     // TODO: Handle this
@@ -50,22 +56,31 @@ public struct AppFeature {
                     return .none
                 }
 
-                state.repoFolder = folder
+                state.diffFeature.repoFolder = folder
 
-                // We need to do a git diff once we have a folder
-                // Really that needs to happen on a timer, but let's start with doing it here
-                let repo = try? Git.Repo(url: folder)
-                let fileChanges = (try? repo?.diffNameStatusWorkingTree()) ?? []
-                state.filePickerFeature.files = fileChanges.map { PickableFile(from: $0) }
+                return .send(.diffFeature(.startDiffPolling))
 
-                return .none
             case let .folderPickerFeature(.failurePickingFolder(error)):
                 // TODO: Handle failure
                 print(error)
                 return .none
+
             case .folderPickerFeature:
+                return .none
+
+            case let .diffFeature(.diffResult(.success(files))):
+                state.filePickerFeature.files = files
+                return .none
+
+            case .diffFeature:
                 return .none
             }
         }
+    }
+}
+
+public extension AppFeature.State {
+    static func make() -> Self {
+        .init()
     }
 }

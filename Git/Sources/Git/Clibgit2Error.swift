@@ -8,7 +8,7 @@
 import Clibgit2
 import Foundation
 
-struct Clibgit2Error: Error, CustomDebugStringConvertible {
+public struct Clibgit2Error: Error, Equatable, CustomDebugStringConvertible{
     let code: Clibgit2ErrorCode
     let errorMessage: String?
 
@@ -25,7 +25,7 @@ struct Clibgit2Error: Error, CustomDebugStringConvertible {
     }
 
     // TODO: Improve formatting
-    var debugDescription: String {
+    public var debugDescription: String {
         var message = "Error code \(code.rawValue): \(code.description)"
         if let errorMessage {
             message += ": " + errorMessage

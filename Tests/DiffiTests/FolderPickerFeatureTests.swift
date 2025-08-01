@@ -43,6 +43,6 @@ struct FolderPickerFeatureTests {
         }
         
         struct TestError: Error {}
-        await store.send(.failurePickingFolder(TestError()))
+        await store.send(.failurePickingFolder(FolderPickerFeature.PickerError(TestError())))
     }
 }

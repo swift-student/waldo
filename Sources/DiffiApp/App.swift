@@ -4,7 +4,7 @@ import Diffi
 
 @main
 struct DiffiAppMain: App {
-    let store = Store(initialState: AppFeature.State()) {
+    let store = Store(initialState: AppFeature.State.make()) {
         AppFeature()
     }
     

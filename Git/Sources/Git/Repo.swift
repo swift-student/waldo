@@ -5,7 +5,7 @@ public extension Git {
     class Repo {
         let repo: OpaquePointer
 
-        public init(url: URL) throws {
+        public init(url: URL) throws(GitError) {
             repo = try Self.open(url: url)
         }
 
@@ -13,7 +13,7 @@ public extension Git {
             Self.free(repo)
         }
 
-        public func diffNameStatus(from: String, to: String) throws -> [Git.Diff.FileChange] {
+        public func diffNameStatus(from: String, to: String) throws(GitError) -> [Git.Diff.FileChange] {
             let fromOID = try Git.revparseSingle(repo: repo, revspec: from)
             let toOID = try Git.revparseSingle(repo: repo, revspec: to)
 
@@ -37,7 +37,7 @@ public extension Git {
             }
         }
 
-        public func diffNameStatusWorkingTree() throws -> [Git.Diff.FileChange] {
+        public func diffNameStatusWorkingTree() throws(GitError) -> [Git.Diff.FileChange] {
             let headOID = try Git.revparseSingle(repo: repo, revspec: "HEAD")
 
             let headTree = try getTreeFromCommit(oid: headOID)
@@ -57,7 +57,7 @@ public extension Git {
             }
         }
 
-        private func getTreeFromCommit(oid: GitOID) throws -> OpaquePointer {
+        private func getTreeFromCommit(oid: GitOID) throws(GitError) -> OpaquePointer {
             let commit = try Git.Commit.lookup(repo: repo, oid: oid)
             defer { Git.Commit.free(commit) }
 

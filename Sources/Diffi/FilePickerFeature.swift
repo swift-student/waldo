@@ -24,16 +24,11 @@ public struct PickableFile: Hashable, Equatable, Identifiable {
 public struct FilePickerFeature {
     @ObservableState
     public struct State: Equatable {
-        public var files: [PickableFile]
-        public var selectedFile: PickableFile?
-
-        public init(files: [PickableFile] = [], selectedFile: PickableFile? = nil) {
-            self.files = files
-            self.selectedFile = selectedFile
-        }
+        var files: [PickableFile] = []
+        var selectedFile: PickableFile?
     }
 
-    public enum Action {
+    public enum Action: Equatable {
         case navigateUp
         case navigateDown
         case userSelectedFile(PickableFile?)
@@ -80,7 +75,7 @@ extension Int {
     }
 }
 
-extension Array {
+extension MutableCollection where Index == Int {
     subscript(clamped index: Int) -> Element {
         get {
             self[index.clamped(to: startIndex ..< endIndex)]
