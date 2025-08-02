@@ -5,11 +5,12 @@ import SwiftUI
 public struct FolderPickerFeature {
     public enum PickerError: Error, Equatable {
         case folderPickingFailed(String)
-        
+
         init(_ error: Error) {
             self = .folderPickingFailed(error.localizedDescription)
         }
     }
+
     @ObservableState
     public struct State: Equatable {
         public var showingFolderPicker = false
