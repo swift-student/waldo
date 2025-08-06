@@ -7,7 +7,11 @@ public struct FilePickerFeature {
     @ObservableState
     public struct State: Equatable {
         var files: [PickableFile] = []
-        var selectedFile: PickableFile?
+        @Shared var selectedFile: PickableFile?
+
+        public init(selectedFile: Shared<PickableFile?> = Shared(value: nil)) {
+            _selectedFile = selectedFile
+        }
     }
 
     public enum Action: Equatable {
@@ -28,7 +32,12 @@ public struct FilePickerFeature {
                     return .none
                 }
 
-                state.selectedFile = state.files[clamped: index - 1]
+                let newSelection = state.files[clamped: index - 1]
+                guard newSelection != state.selectedFile else {
+                    return .none
+                }
+
+                state.$selectedFile.withLock { $0 = newSelection }
                 return .none
 
             case .navigateDown:
@@ -38,11 +47,16 @@ public struct FilePickerFeature {
                     return .none
                 }
 
-                state.selectedFile = state.files[clamped: index + 1]
+                let newSelection = state.files[clamped: index + 1]
+                guard newSelection != state.selectedFile else {
+                    return .none
+                }
+
+                state.$selectedFile.withLock { $0 = newSelection }
                 return .none
 
             case let .userSelectedFile(file):
-                state.selectedFile = file
+                state.$selectedFile.withLock { $0 = file }
                 return .none
             }
         }
