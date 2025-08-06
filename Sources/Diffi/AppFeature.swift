@@ -8,15 +8,24 @@ import SwiftUI
 public struct AppFeature {
     @ObservableState
     public struct State: Equatable {
-        var filePickerFeature = FilePickerFeature.State()
+        @Shared var selectedFile: PickableFile?
+        var filePickerFeature: FilePickerFeature.State
         var folderPickerFeature = FolderPickerFeature.State()
         var diffFeature = DiffFeature.State()
+        var imageDiffFeature: ImageDiffFeature.State
+        
+        public init() {
+            self._selectedFile = Shared(value: nil)
+            self.filePickerFeature = FilePickerFeature.State(selectedFile: self._selectedFile)
+            self.imageDiffFeature = ImageDiffFeature.State(selectedFile: self._selectedFile)
+        }
     }
 
     public enum Action: Equatable {
         case filePickerFeature(FilePickerFeature.Action)
         case folderPickerFeature(FolderPickerFeature.Action)
         case diffFeature(DiffFeature.Action)
+        case imageDiffFeature(ImageDiffFeature.Action)
     }
 
     @Dependency(\.fileService.fileExists) var fileExists
@@ -36,6 +45,9 @@ public struct AppFeature {
         }
         Scope(state: \.diffFeature, action: \.diffFeature) {
             DiffFeature()
+        }
+        Scope(state: \.imageDiffFeature, action: \.imageDiffFeature) {
+            ImageDiffFeature()
         }
         Reduce { state, action in
             switch action {
@@ -57,6 +69,7 @@ public struct AppFeature {
                 }
 
                 state.diffFeature.repoFolder = folder
+                state.imageDiffFeature.repositoryPath = folder
 
                 return .send(.diffFeature(.startDiffPolling))
 
@@ -69,10 +82,13 @@ public struct AppFeature {
                 return .none
 
             case let .diffFeature(.diffResult(.success(files))):
-                state.filePickerFeature.files = files
+                state.filePickerFeature.files = files.filter { $0.isImageFile }
                 return .none
 
             case .diffFeature:
+                return .none
+                
+            case .imageDiffFeature:
                 return .none
             }
         }
