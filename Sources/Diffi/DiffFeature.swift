@@ -8,11 +8,15 @@ import SwiftUI
 public struct DiffFeature {
     @ObservableState
     public struct State: Equatable {
-        var repoFolder: URL?
+        @SharedReader var repoFolder: URL?
         var isDiffPolling: Bool = false
         var failureCount: Int = 0
         var currentFailureResponse: FailureResponse?
         var currentError: GitError?
+
+        init(repoFolder: Shared<URL?>) {
+            _repoFolder = SharedReader(repoFolder)
+        }
     }
 
     public enum Action: Equatable {

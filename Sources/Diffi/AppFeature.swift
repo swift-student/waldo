@@ -9,15 +9,18 @@ public struct AppFeature {
     @ObservableState
     public struct State: Equatable {
         @Shared var selectedFile: PickableFile?
+        @Shared var repoFolder: URL?
         var filePickerFeature: FilePickerFeature.State
         var folderPickerFeature = FolderPickerFeature.State()
-        var diffFeature = DiffFeature.State()
+        var diffFeature: DiffFeature.State
         var imageDiffFeature: ImageDiffFeature.State
-        
+
         public init() {
-            self._selectedFile = Shared(value: nil)
-            self.filePickerFeature = FilePickerFeature.State(selectedFile: self._selectedFile)
-            self.imageDiffFeature = ImageDiffFeature.State(selectedFile: self._selectedFile)
+            _selectedFile = Shared(value: nil)
+            _repoFolder = Shared(value: nil)
+            filePickerFeature = FilePickerFeature.State(selectedFile: _selectedFile)
+            diffFeature = DiffFeature.State(repoFolder: _repoFolder)
+            imageDiffFeature = ImageDiffFeature.State(selectedFile: _selectedFile, repoFolder: _repoFolder)
         }
     }
 
@@ -68,8 +71,7 @@ public struct AppFeature {
                     return .none
                 }
 
-                state.diffFeature.repoFolder = folder
-                state.imageDiffFeature.repositoryPath = folder
+                state.$repoFolder.withLock { $0 = folder }
 
                 return .send(.diffFeature(.startDiffPolling))
 
@@ -87,7 +89,7 @@ public struct AppFeature {
 
             case .diffFeature:
                 return .none
-                
+
             case .imageDiffFeature:
                 return .none
             }

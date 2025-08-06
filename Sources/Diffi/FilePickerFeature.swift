@@ -9,7 +9,7 @@ public struct FilePickerFeature {
         var files: [PickableFile] = []
         @Shared var selectedFile: PickableFile?
 
-        public init(selectedFile: Shared<PickableFile?> = Shared(value: nil)) {
+        public init(selectedFile: Shared<PickableFile?>) {
             _selectedFile = selectedFile
         }
     }
