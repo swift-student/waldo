@@ -4,6 +4,7 @@ import Git
 
 struct GitService {
     var performDiff: (URL) -> Result<[PickableFile], GitError>
+    var showFile: (URL, String, String) -> Result<Data, GitError>
 }
 
 extension GitService: DependencyKey {
@@ -12,9 +13,21 @@ extension GitService: DependencyKey {
             performDiff: { repoFolder in
                 do throws(GitError) {
                     let repo = try Git.Repo(url: repoFolder)
-                    let fileChanges = try repo.diffNameStatusWorkingTree()
-                    let pickableFiles = fileChanges.map { PickableFile(from: $0) }
+                    let diffChanges = try repo.diffNameStatusWorkingTree()
+                    print("Diff changes count: \(diffChanges.count)")
+                    
+                    let untrackedChanges = try repo.getUntrackedFiles()
+                    print("Untracked changes count: \(untrackedChanges.count)")
+                    
+                    let allChanges = diffChanges + untrackedChanges
+                    print("Total changes count: \(allChanges.count)")
+                    
+                    let pickableFiles = allChanges.map { PickableFile(from: $0) }
                     return .success(pickableFiles)
+                } catch {
+                    print("GitService error: \(error)")
+                    return .failure(error)
+                }
             },
             showFile: { repoFolder, revspec, filePath in
                 do throws(GitError) {
