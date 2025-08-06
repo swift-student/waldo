@@ -130,14 +130,14 @@ struct GitRepoTests {
             // Modify an existing file (unstaged)
             try Self.writeToFile("file1.txt", content: "Modified in working tree", in: tempDir)
 
-            // Add a new file and stage it
-            try Self.writeToFile("staged_new.txt", content: "New staged file", in: tempDir)
-            try Self.runGitCommand(["add", "staged_new.txt"], in: tempDir)
-
             // Modify and stage a file, then modify it again (both staged and unstaged changes)
             try Self.writeToFile("file2.txt", content: "First modification", in: tempDir)
             try Self.runGitCommand(["add", "file2.txt"], in: tempDir)
             try Self.writeToFile("file2.txt", content: "Second modification", in: tempDir)
+
+            // Add a new file and stage it
+            try Self.writeToFile("staged_new.txt", content: "New staged file", in: tempDir)
+            try Self.runGitCommand(["add", "staged_new.txt"], in: tempDir)
 
             // Add untracked files
             try Self.writeToFile("untracked1.txt", content: "Untracked 1", in: tempDir)
@@ -145,7 +145,7 @@ struct GitRepoTests {
 
             let allStatus = try repo.status()
 
-            #expect(allStatus.count == 4)
+            #expect(allStatus.count == 5)
 
             // Check for specific files
             let untrackedFiles = allStatus.filter { $0.status == .untracked }
@@ -154,11 +154,12 @@ struct GitRepoTests {
             #expect(untrackedFiles.contains { $0.path == "untracked2.txt" })
 
             let modifiedFiles = allStatus.filter { $0.status == .modified }
-            #expect(modifiedFiles.count >= 1) // At least file1.txt and possibly file2.txt
+            #expect(modifiedFiles.count == 2)
             #expect(modifiedFiles.contains { $0.path == "file1.txt" })
+            #expect(modifiedFiles.contains { $0.path == "file2.txt" })
 
             let addedFiles = allStatus.filter { $0.status == .added }
-            #expect(addedFiles.count >= 1) // At least staged_new.txt
+            #expect(addedFiles.count == 1)
             #expect(addedFiles.contains { $0.path == "staged_new.txt" })
         }
     }
