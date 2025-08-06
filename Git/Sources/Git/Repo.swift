@@ -57,6 +57,20 @@ public extension Git {
             }
         }
 
+        public func show(revspec: String, filePath: String) throws(GitError) -> Data {
+            let oid = try Git.revparseSingle(repo: repo, revspec: revspec)
+            let tree = try getTreeFromCommit(oid: oid)
+            defer { Git.Tree.free(tree) }
+
+            let entry = try Git.Tree.entryByPath(tree: tree, path: filePath)
+            defer { Git.Tree.entryFree(entry) }
+            
+            let blobOID = Git.Tree.entryOID(entry)
+            let blob = try Git.Blob.lookup(repo: repo, oid: blobOID)
+            defer { Git.Blob.free(blob) }
+
+            return try Git.Blob.data(blob)
+        }
         private func getTreeFromCommit(oid: GitOID) throws(GitError) -> OpaquePointer {
             let commit = try Git.Commit.lookup(repo: repo, oid: oid)
             defer { Git.Commit.free(commit) }

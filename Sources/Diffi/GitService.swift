@@ -15,6 +15,12 @@ extension GitService: DependencyKey {
                     let fileChanges = try repo.diffNameStatusWorkingTree()
                     let pickableFiles = fileChanges.map { PickableFile(from: $0) }
                     return .success(pickableFiles)
+            },
+            showFile: { repoFolder, revspec, filePath in
+                do throws(GitError) {
+                    let repo = try Git.Repo(url: repoFolder)
+                    let data = try repo.show(revspec: revspec, filePath: filePath)
+                    return .success(data)
                 } catch {
                     return .failure(error)
                 }

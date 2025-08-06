@@ -15,6 +15,8 @@ public enum GitError: Error, Equatable, CustomDebugStringConvertible {
     case failedToLookupCommit(Clibgit2Error)
     case failedToGetCommitTree(Clibgit2Error)
     case failedToCreateDiff(Clibgit2Error)
+    case failedToFindTreeEntry(Clibgit2Error)
+    case failedToLookupBlob(Clibgit2Error)
 
     public var debugDescription: String {
         switch self {
@@ -32,6 +34,10 @@ public enum GitError: Error, Equatable, CustomDebugStringConvertible {
             "Failed to get commit tree: \(error)"
         case let .failedToCreateDiff(error):
             "Failed to create diff: \(error)"
+        case let .failedToFindTreeEntry(error):
+            "Failed to find tree entry: \(error)"
+        case let .failedToLookupBlob(error):
+            "Failed to lookup blob: \(error)"
         }
     }
 }
