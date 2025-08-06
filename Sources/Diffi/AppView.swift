@@ -19,7 +19,17 @@ public struct AppView: View {
                     )
                 )
             } detail: {
-                Text("Select a file to view details")
+                if let selectedFile = store.filePickerFeature.selectedFile,
+                   selectedFile.isImageFile {
+                    ImageDiffView(
+                        store: store.scope(
+                            state: \.imageDiffFeature,
+                            action: \.imageDiffFeature
+                        )
+                    )
+                } else {
+                    Text("Select a file to view details")
+                }
             }
         } else {
             FolderPicker(
