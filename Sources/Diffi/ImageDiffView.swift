@@ -3,42 +3,71 @@ import Foundation
 import Git
 import SwiftUI
 
+struct ImageVersionView: View {
+    let title: String
+    let state: ImageLoadState?
+    
+    var body: some View {
+        VStack {
+            Text(title)
+                .font(.headline)
+            
+            content
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    @ViewBuilder
+    private var content: some View {
+        switch state {
+        case .loading:
+            ProgressView("Loading...")
+        case let .loaded(image):
+            image
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        case let .error(error):
+            VStack {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 50))
+                    .foregroundColor(.orange)
+                Text("Could not load image")
+                    .foregroundColor(.secondary)
+                Text(error.debugDescription)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        case .none:
+            EmptyView()
+        }
+    }
+}
+
 struct ImageDiffView: View {
     @Bindable var store: StoreOf<ImageDiffFeature>
 
     var body: some View {
-        HStack(spacing: 20) {
-            VStack {
-                Text(previousVersionTitle)
-                    .font(.headline)
-
-                previousVersionContent
+        Group {
+            if store.previousVersionState != nil {
+                HStack(spacing: 20) {
+                    ImageVersionView(
+                        title: previousVersionTitle,
+                        state: store.previousVersionState
+                    )
+                    
+                    ImageVersionView(
+                        title: currentVersionTitle,
+                        state: store.currentVersionState
+                    )
+                }
+            } else {
+                ImageVersionView(
+                    title: currentVersionTitle,
+                    state: store.currentVersionState
+                )
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            VStack {
-                Text(currentVersionTitle)
-                    .font(.headline)
-
-                currentVersionContent
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding()
-        .alert(
-            "Error",
-            isPresented: .constant(store.error != nil),
-            actions: {
-                Button("OK") {
-                    store.send(.clearError)
-                }
-            },
-            message: {
-                if let error = store.error {
-                    Text(error.debugDescription)
-                }
-            }
-        )
         .onAppear {
             store.send(.onAppear)
         }
@@ -62,55 +91,5 @@ struct ImageDiffView: View {
         }
     }
 
-    @ViewBuilder
-    private var previousVersionContent: some View {
-        if store.selectedFile?.status == .added || store.selectedFile?.status == .untracked {
-            VStack {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 50))
-                    .foregroundColor(.green)
-                Text("This is a new file")
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let data = store.previousVersionData,
-                  let nsImage = NSImage(data: data)
-        {
-            Image(nsImage: nsImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-        } else if store.isLoading {
-            ProgressView("Loading previous version...")
-        } else {
-            VStack {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 50))
-                    .foregroundColor(.orange)
-                Text("Could not load previous version")
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var currentVersionContent: some View {
-        if let data = store.currentVersionData,
-           let nsImage = NSImage(data: data)
-        {
-            Image(nsImage: nsImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-        } else if store.isLoading {
-            ProgressView("Loading current version...")
-        } else {
-            VStack {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 50))
-                    .foregroundColor(.orange)
-                Text("Could not load current version")
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
 }
 
