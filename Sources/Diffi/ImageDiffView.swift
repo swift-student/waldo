@@ -46,7 +46,7 @@ struct ImageDiffView: View {
 
     private var previousVersionTitle: String {
         switch store.selectedFile?.status {
-        case .added:
+        case .added, .untracked:
             return "New File"
         default:
             return "Before (HEAD)"
@@ -55,7 +55,7 @@ struct ImageDiffView: View {
 
     private var currentVersionTitle: String {
         switch store.selectedFile?.status {
-        case .added:
+        case .added, .untracked:
             return "Current (New)"
         default:
             return "After (Working)"
@@ -64,7 +64,7 @@ struct ImageDiffView: View {
 
     @ViewBuilder
     private var previousVersionContent: some View {
-        if store.selectedFile?.status == .added {
+        if store.selectedFile?.status == .added || store.selectedFile?.status == .untracked {
             VStack {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 50))
