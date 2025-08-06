@@ -72,7 +72,11 @@ public struct DiffFeature {
                 .cancellable(id: CancellableID.diffPolling)
 
             case .scheduledDiffAttempt:
-                guard let repoFolder = state.repoFolder, state.isDiffPolling else { return .none }
+                guard let repoFolder = state.repoFolder, state.isDiffPolling else {
+                    state.isDiffPolling = false
+                    clearFailureState(&state)
+                    return .none
+                }
                 return performDiff(repoFolder: repoFolder)
             }
         }
