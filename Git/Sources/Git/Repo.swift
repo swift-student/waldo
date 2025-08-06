@@ -64,7 +64,7 @@ public extension Git {
 
             let entry = try Git.Tree.entryByPath(tree: tree, path: filePath)
             defer { Git.Tree.entryFree(entry) }
-            
+
             let blobOID = Git.Tree.entryOID(entry)
             let blob = try Git.Blob.lookup(repo: repo, oid: blobOID)
             defer { Git.Blob.free(blob) }
@@ -72,57 +72,14 @@ public extension Git {
             return try Git.Blob.data(blob)
         }
 
-        public func getUntrackedFiles() throws(GitError) -> [Git.Diff.FileChange] {
-            var statusList: OpaquePointer?
-            var options = git_status_options()
-            git_status_options_init(&options, UInt32(GIT_STATUS_OPTIONS_VERSION))
-            
-            // Configure options to show index and workdir, and include untracked files
-            options.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR
-            options.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED.rawValue
-            
-            let returnCode = git_status_list_new(&statusList, repo, &options)
-            guard let statusList = statusList else {
-                throw GitError.failedToGetStatus(
-                    Clibgit2Error(code: Clibgit2ErrorCode(returnCode: returnCode) ?? .error)
-                )
-            }
-            defer { git_status_list_free(statusList) }
-            
-            let count = git_status_list_entrycount(statusList)
-            
-            return (0..<count).compactMap { index in
-                guard let entry = git_status_byindex(statusList, index) else {
-                    return nil
-                }
-                
-                let status = entry.pointee.status
-                
-                // Check if this is an untracked file
-                guard status.rawValue & GIT_STATUS_WT_NEW.rawValue != 0 else {
-                    return nil 
-                }
-                
-                // For untracked files, the path is in index_to_workdir->new_file.path
-                guard let indexToWorkdir = entry.pointee.index_to_workdir,
-                      let pathPointer = indexToWorkdir.pointee.new_file.path else {
-                    return nil
-                }
-                
-                let path = String(cString: pathPointer)
-                return Git.Diff.FileChange(status: .untracked, path: path)
-            }
-        }
-
-        /// Get the complete status of all files in the repository (tracked, modified, untracked, etc.)
         public func status(includeUntracked: Bool = true, includeIgnored: Bool = false) throws(GitError) -> [Git.Diff.FileChange] {
             var statusList: OpaquePointer?
             var options = git_status_options()
             git_status_options_init(&options, UInt32(GIT_STATUS_OPTIONS_VERSION))
-            
+
             // Configure what to show
             options.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR
-            
+
             // Configure flags based on parameters
             var flags: UInt32 = 0
             if includeUntracked {
@@ -132,7 +89,7 @@ public extension Git {
                 flags |= GIT_STATUS_OPT_INCLUDE_IGNORED.rawValue
             }
             options.flags = flags
-            
+
             let returnCode = git_status_list_new(&statusList, repo, &options)
             guard let statusList = statusList else {
                 throw GitError.failedToGetStatus(
@@ -140,48 +97,42 @@ public extension Git {
                 )
             }
             defer { git_status_list_free(statusList) }
-            
+
             let count = git_status_list_entrycount(statusList)
-            
-            return (0..<count).compactMap { index in
+
+            return (0 ..< count).compactMap { index in
+                // Entry is not modifiable and should not be freed
                 guard let entry = git_status_byindex(statusList, index) else {
                     return nil
                 }
-                
-                let statusFlags = entry.pointee.status
-                
-                // Convert libgit2 status flags to our status enum and get file path
-                if let (status, path) = self.parseStatusEntry(entry: entry, statusFlags: statusFlags) {
-                    return Git.Diff.FileChange(status: status, path: path)
-                }
-                
-                return nil
+
+                return parseStatusEntry(entry: entry, statusFlags: entry.pointee.status)
             }
         }
 
-        private func parseStatusEntry(entry: UnsafePointer<git_status_entry>, statusFlags: git_status_t) -> (Git.Diff.Status, String)? {
+        private func parseStatusEntry(entry: UnsafePointer<git_status_entry>, statusFlags: git_status_t) -> Git.Diff.FileChange? {
             // Determine the appropriate path based on the status
             var pathPointer: UnsafePointer<CChar>?
-            
+
             // For untracked files, use index_to_workdir
             if statusFlags.rawValue & GIT_STATUS_WT_NEW.rawValue != 0 {
                 pathPointer = entry.pointee.index_to_workdir?.pointee.new_file.path
             }
+
             // For files modified in working tree, use index_to_workdir
             else if statusFlags.rawValue & (GIT_STATUS_WT_MODIFIED.rawValue | GIT_STATUS_WT_DELETED.rawValue | GIT_STATUS_WT_TYPECHANGE.rawValue) != 0 {
                 pathPointer = entry.pointee.index_to_workdir?.pointee.new_file.path ?? entry.pointee.index_to_workdir?.pointee.old_file.path
             }
+
             // For files modified in index, use head_to_index
             else if statusFlags.rawValue & (GIT_STATUS_INDEX_NEW.rawValue | GIT_STATUS_INDEX_MODIFIED.rawValue | GIT_STATUS_INDEX_DELETED.rawValue | GIT_STATUS_INDEX_TYPECHANGE.rawValue) != 0 {
                 pathPointer = entry.pointee.head_to_index?.pointee.new_file.path ?? entry.pointee.head_to_index?.pointee.old_file.path
             }
-            
-            guard let pathPointer = pathPointer else {
-                return nil
-            }
-            
+
+            guard let pathPointer else { return nil }
+
             let path = String(cString: pathPointer)
-            
+
             // Convert status flags to our enum
             let status: Git.Diff.Status
             if statusFlags.rawValue & GIT_STATUS_WT_NEW.rawValue != 0 {
@@ -196,8 +147,8 @@ public extension Git {
                 // For other statuses, default to modified
                 status = .modified
             }
-            
-            return (status, path)
+
+            return Git.Diff.FileChange(status: status, path: path)
         }
 
         private func getTreeFromCommit(oid: GitOID) throws(GitError) -> OpaquePointer {

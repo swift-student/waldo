@@ -124,138 +124,42 @@ struct GitRepoTests {
         }
     }
 
-    @Test("Get untracked files - basic test")
-    func getUntrackedFiles() throws {
-        try Self.withTestRepo { repo, tempDir in
-            // Create some untracked files
-            try Self.writeToFile("untracked1.txt", content: "Untracked content 1", in: tempDir)
-            try Self.writeToFile("untracked2.txt", content: "Untracked content 2", in: tempDir)
-            
-            // Also create a file with spaces in the name like the Eva file
-            try Self.writeToFile("5 - Eva McDermott - Test.jpg", content: "Test image", in: tempDir)
-
-            // Debug: Check what git status shows
-            print("DEBUG: Running git status in test repo")
-            let (statusOutput, _) = try Self.runGitCommandWithOutput(["status", "--porcelain"], in: tempDir)
-            print("DEBUG: Git status output:")
-            print(statusOutput)
-            
-            // Debug: List directory contents
-            print("DEBUG: Directory contents:")
-            let contents = try FileManager.default.contentsOfDirectory(atPath: tempDir.path)
-            for item in contents {
-                print("  \(item)")
-            }
-
-            let untrackedFiles = try repo.getUntrackedFiles()
-            
-            #expect(untrackedFiles.count == 3)
-            
-            let paths = untrackedFiles.map(\.path).sorted()
-            #expect(paths[0] == "5 - Eva McDermott - Test.jpg")
-            #expect(paths[1] == "untracked1.txt")
-            #expect(paths[2] == "untracked2.txt")
-            
-            // All should have untracked status
-            for file in untrackedFiles {
-                #expect(file.status == .untracked)
-            }
-        }
-    }
-
-    @Test("Get untracked files - empty when no untracked files")
-    func getUntrackedFilesEmpty() throws {
-        try Self.withTestRepo { repo, _ in
-            // Fresh repo with no untracked files
-            let untrackedFiles = try repo.getUntrackedFiles()
-            #expect(untrackedFiles.isEmpty)
-        }
-    }
-
-    @Test("Get untracked files - ignores staged and committed files")
-    func getUntrackedFilesIgnoresKnownFiles() throws {
-        try Self.withTestRepo { repo, tempDir in
-            // Modify an existing file (should not appear in untracked)
-            try Self.writeToFile("file1.txt", content: "Modified content", in: tempDir)
-            
-            // Add a new file and stage it (should not appear in untracked)
-            try Self.writeToFile("staged.txt", content: "Staged content", in: tempDir)
-            try Self.runGitCommand(["add", "staged.txt"], in: tempDir)
-            
-            // Add an untracked file
-            try Self.writeToFile("truly_untracked.txt", content: "Untracked content", in: tempDir)
-
-            let untrackedFiles = try repo.getUntrackedFiles()
-            
-            #expect(untrackedFiles.count == 1)
-            #expect(untrackedFiles[0].path == "truly_untracked.txt")
-            #expect(untrackedFiles[0].status == .untracked)
-        }
-    }
-
-    @Test("Unified status - comprehensive test with all file types")
-    func unifiedStatusComprehensiveTest() throws {
+    @Test("Status - modified, staged, and untracked files")
+    func status() throws {
         try Self.withTestRepo { repo, tempDir in
             // Modify an existing file (unstaged)
             try Self.writeToFile("file1.txt", content: "Modified in working tree", in: tempDir)
-            
+
             // Add a new file and stage it
             try Self.writeToFile("staged_new.txt", content: "New staged file", in: tempDir)
             try Self.runGitCommand(["add", "staged_new.txt"], in: tempDir)
-            
+
             // Modify and stage a file, then modify it again (both staged and unstaged changes)
             try Self.writeToFile("file2.txt", content: "First modification", in: tempDir)
             try Self.runGitCommand(["add", "file2.txt"], in: tempDir)
             try Self.writeToFile("file2.txt", content: "Second modification", in: tempDir)
-            
+
             // Add untracked files
             try Self.writeToFile("untracked1.txt", content: "Untracked 1", in: tempDir)
             try Self.writeToFile("untracked2.txt", content: "Untracked 2", in: tempDir)
-            
-            let allStatus = try repo.status(includeUntracked: true, includeIgnored: false)
-            
-            // Should find all modified, staged, and untracked files
-            #expect(allStatus.count >= 4) // At least: file1.txt (modified), staged_new.txt (added), file2.txt (modified), untracked files
-            
-            let paths = allStatus.map(\.path).sorted()
-            print("DEBUG: All status paths: \(paths)")
-            
+
+            let allStatus = try repo.status()
+
+            #expect(allStatus.count == 4)
+
             // Check for specific files
             let untrackedFiles = allStatus.filter { $0.status == .untracked }
             #expect(untrackedFiles.count == 2)
             #expect(untrackedFiles.contains { $0.path == "untracked1.txt" })
             #expect(untrackedFiles.contains { $0.path == "untracked2.txt" })
-            
+
             let modifiedFiles = allStatus.filter { $0.status == .modified }
             #expect(modifiedFiles.count >= 1) // At least file1.txt and possibly file2.txt
             #expect(modifiedFiles.contains { $0.path == "file1.txt" })
-            
+
             let addedFiles = allStatus.filter { $0.status == .added }
             #expect(addedFiles.count >= 1) // At least staged_new.txt
             #expect(addedFiles.contains { $0.path == "staged_new.txt" })
-        }
-    }
-
-    @Test("Unified status - excluding untracked files")
-    func unifiedStatusExcludingUntracked() throws {
-        try Self.withTestRepo { repo, tempDir in
-            // Modify an existing file
-            try Self.writeToFile("file1.txt", content: "Modified content", in: tempDir)
-            
-            // Add untracked files
-            try Self.writeToFile("untracked1.txt", content: "Untracked 1", in: tempDir)
-            try Self.writeToFile("untracked2.txt", content: "Untracked 2", in: tempDir)
-            
-            let statusWithoutUntracked = try repo.status(includeUntracked: false, includeIgnored: false)
-            
-            // Should only find tracked files that have changes
-            let untrackedFiles = statusWithoutUntracked.filter { $0.status == .untracked }
-            #expect(untrackedFiles.isEmpty)
-            
-            // Should still find modified tracked files
-            let modifiedFiles = statusWithoutUntracked.filter { $0.status == .modified }
-            #expect(modifiedFiles.count >= 1)
-            #expect(modifiedFiles.contains { $0.path == "file1.txt" })
         }
     }
 
@@ -335,43 +239,5 @@ struct GitRepoTests {
             throw GitCommandError(description: message)
         }
     }
-    
-    static func runGitCommandWithOutput(_ args: [String], in directory: URL) throws -> (String, String) {
-        let process = Process()
-        process.currentDirectoryPath = directory.path
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-        process.arguments = args
 
-        // Capture output for debugging
-        let outputPipe = Pipe()
-        let errorPipe = Pipe()
-        process.standardOutput = outputPipe
-        process.standardError = errorPipe
-
-        try process.run()
-        process.waitUntilExit()
-
-        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-        let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-
-        let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-        let standardOutput = String(data: outputData, encoding: .utf8) ?? ""
-
-        if process.terminationStatus != 0 {
-            let message = """
-            Git command failed: git \(args.joined(separator: " "))
-            Exit code: \(process.terminationStatus)
-            Standard output: \(standardOutput)
-            Error output: \(errorOutput)
-            """
-
-            struct GitCommandError: Error, CustomStringConvertible {
-                let description: String
-            }
-
-            throw GitCommandError(description: message)
-        }
-        
-        return (standardOutput, errorOutput)
-    }
 }
