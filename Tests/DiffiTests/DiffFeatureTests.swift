@@ -15,7 +15,7 @@ struct DiffFeatureTests {
     @Test @MainActor
     func startDiffPolling() async {
         let store = TestStore(
-            initialState: DiffFeature.State(repoFolder: repoFolder)
+            initialState: DiffFeature.State(repoFolder: Shared(value: repoFolder))
         ) {
             DiffFeature()
         } withDependencies: {
@@ -50,7 +50,7 @@ struct DiffFeatureTests {
     @Test @MainActor
     func startDiffPollingWithoutRepo() async {
         let store = TestStore(
-            initialState: DiffFeature.State()
+            initialState: DiffFeature.State(repoFolder: Shared(value: nil))
         ) {
             DiffFeature()
         } withDependencies: {
@@ -65,7 +65,7 @@ struct DiffFeatureTests {
     func stopDiffPolling_AfterFailure() async {
         let store = TestStore(
             initialState: DiffFeature.State(
-                repoFolder: repoFolder,
+                repoFolder: Shared(value: repoFolder),
                 isDiffPolling: true,
                 failureCount: 2,
                 currentFailureResponse: .wait(5),
@@ -89,7 +89,7 @@ struct DiffFeatureTests {
     func successfulDiffResult_AfterFailure() async {
         let store = TestStore(
             initialState: DiffFeature.State(
-                repoFolder: repoFolder,
+                repoFolder: Shared(value: repoFolder),
                 isDiffPolling: true,
                 failureCount: 3,
                 currentFailureResponse: .showErrorToast(andWait: 10),
@@ -123,7 +123,7 @@ struct DiffFeatureTests {
     @Test @MainActor
     func failureBackoffProgression() async {
         let store = TestStore(
-            initialState: DiffFeature.State(repoFolder: repoFolder, isDiffPolling: true)
+            initialState: DiffFeature.State(repoFolder: Shared(value: repoFolder), isDiffPolling: true)
         ) {
             DiffFeature()
         } withDependencies: {
@@ -161,7 +161,7 @@ struct DiffFeatureTests {
     func scheduledDiffAttempt_WithoutActivePolling() async {
         let store = TestStore(
             initialState: DiffFeature.State(
-                repoFolder: repoFolder,
+                repoFolder: Shared(value: repoFolder),
                 isDiffPolling: false
             )
         ) {
@@ -177,7 +177,7 @@ struct DiffFeatureTests {
     @Test @MainActor
     func scheduledDiffAttempt_WithoutRepo() async {
         let store = TestStore(
-            initialState: DiffFeature.State(isDiffPolling: true)
+            initialState: DiffFeature.State(repoFolder: Shared(value: nil), isDiffPolling: true)
         ) {
             DiffFeature()
         } withDependencies: {
@@ -185,7 +185,9 @@ struct DiffFeatureTests {
             $0.gitService.performDiff = { _ in .success([]) }
         }
 
-        await store.send(.scheduledDiffAttempt)
+        await store.send(.scheduledDiffAttempt) {
+            $0.isDiffPolling = false
+        }
     }
 }
 
