@@ -84,7 +84,15 @@ public struct AppFeature {
                 return .none
 
             case let .diffFeature(.diffResult(.success(files))):
-                state.filePickerFeature.files = files.filter { $0.isImageFile }
+                let imageFiles = files.filter { $0.isImageFile }
+                
+                // Check if selected file is still in the diff results
+                if let selectedFile = state.selectedFile,
+                   !imageFiles.contains(selectedFile) {
+                    state.$selectedFile.withLock { $0 = nil }
+                }
+                
+                state.filePickerFeature.files = imageFiles
                 return .none
 
             case .diffFeature:
