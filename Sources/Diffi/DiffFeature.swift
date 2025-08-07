@@ -9,13 +9,23 @@ public struct DiffFeature {
     @ObservableState
     public struct State: Equatable {
         @SharedReader var repoFolder: URL?
-        var isDiffPolling: Bool = false
-        var failureCount: Int = 0
+        var isDiffPolling: Bool
+        var failureCount: Int
         var currentFailureResponse: FailureResponse?
         var currentError: GitError?
 
-        init(repoFolder: Shared<URL?>) {
+        init(
+            repoFolder: Shared<URL?>,
+            isDiffPolling: Bool = false,
+            failureCount: Int = 0,
+            currentFailureResponse: FailureResponse? = nil,
+            currentError: GitError? = nil
+        ) {
             _repoFolder = SharedReader(repoFolder)
+            self.isDiffPolling = isDiffPolling
+            self.failureCount = failureCount
+            self.currentFailureResponse = currentFailureResponse
+            self.currentError = currentError
         }
     }
 

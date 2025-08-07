@@ -6,10 +6,11 @@ import SwiftUI
 public struct FilePickerFeature {
     @ObservableState
     public struct State: Equatable {
-        var files: [PickableFile] = []
+        var files: [PickableFile]
         @Shared var selectedFile: PickableFile?
 
-        public init(selectedFile: Shared<PickableFile?>) {
+        public init(files: [PickableFile] = [], selectedFile: Shared<PickableFile?> = Shared(value: nil)) {
+            self.files = files
             _selectedFile = selectedFile
         }
     }
