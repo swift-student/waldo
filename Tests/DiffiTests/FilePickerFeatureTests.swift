@@ -6,14 +6,13 @@ import Testing
 
 @MainActor
 struct FilePickerFeatureTests {
-    // Helper to create mock file changes
     private func mockFileChange(path: String) -> PickableFile {
         return PickableFile(path: path, status: .modified)
     }
 
     @Test
     func initialState_default() {
-        let store = TestStore(initialState: FilePickerFeature.State()) {
+        let store = TestStore(initialState: FilePickerFeature.State(selectedFile: Shared(value: nil))) {
             FilePickerFeature()
         }
 
@@ -29,9 +28,9 @@ struct FilePickerFeatureTests {
         ]
         let selectedFile = files[0]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: selectedFile)
-        ) {
+        let state = FilePickerFeature.State(files: files, selectedFile: Shared(value: selectedFile))
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
@@ -46,9 +45,9 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file2.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: nil)
-        ) {
+        let state = FilePickerFeature.State(files: files)
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
@@ -63,9 +62,10 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file3.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: files[0])
-        ) {
+        let selectedFile = Shared<PickableFile?>(value: files[0])
+        let state = FilePickerFeature.State(files: files, selectedFile: selectedFile)
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
@@ -81,14 +81,15 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file3.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: files[1])
-        ) {
+        let selectedFile = files[1]
+        let state = FilePickerFeature.State(files: files, selectedFile: Shared(value: selectedFile))
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
         await store.send(.navigateUp) {
-            $0.selectedFile = files[0] // Should move to previous file
+            $0.$selectedFile.withLock { $0 = files[0] }
         }
     }
 
@@ -99,9 +100,9 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file2.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: nil)
-        ) {
+        let state = FilePickerFeature.State(files: files)
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
@@ -116,9 +117,10 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file3.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: files[2])
-        ) {
+        let selectedFile = files[2]
+        let state = FilePickerFeature.State(files: files, selectedFile: Shared(value: selectedFile))
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
@@ -134,14 +136,15 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file3.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: files[1])
-        ) {
+        let selectedFile = files[1]
+        let state = FilePickerFeature.State(files: files, selectedFile: Shared(value: selectedFile))
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
         await store.send(.navigateDown) {
-            $0.selectedFile = files[2] // Should move to next file
+            $0.$selectedFile.withLock { $0 = files[2] }
         }
     }
 
@@ -152,14 +155,14 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file2.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: nil)
-        ) {
+        let state = FilePickerFeature.State(files: files)
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
         await store.send(.userSelectedFile(files[1])) {
-            $0.selectedFile = files[1]
+            $0.$selectedFile.withLock { $0 = files[1] }
         }
     }
 
@@ -170,21 +173,23 @@ struct FilePickerFeatureTests {
             mockFileChange(path: "file2.swift"),
         ]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: files[0])
-        ) {
+        let selectedFile = files[0]
+        let state = FilePickerFeature.State(files: files, selectedFile: Shared(value: selectedFile))
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
         await store.send(.userSelectedFile(nil)) {
-            $0.selectedFile = nil
+            $0.$selectedFile.withLock { $0 = nil }
         }
     }
 
     @Test
     func navigation_withEmptyFiles() async {
+        let selectedFile = Shared<PickableFile?>(value: nil)
         let store = TestStore(
-            initialState: FilePickerFeature.State(files: [], selectedFile: nil)
+            initialState: FilePickerFeature.State(selectedFile: selectedFile)
         ) {
             FilePickerFeature()
         }
@@ -197,9 +202,10 @@ struct FilePickerFeatureTests {
     func navigation_withSingleFile() async {
         let files = [mockFileChange(path: "file1.swift")]
 
-        let store = TestStore(
-            initialState: FilePickerFeature.State(files: files, selectedFile: files[0])
-        ) {
+        let selectedFile = files[0]
+        let state = FilePickerFeature.State(files: files, selectedFile: Shared(value: selectedFile))
+
+        let store = TestStore(initialState: state) {
             FilePickerFeature()
         }
 
