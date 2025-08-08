@@ -17,6 +17,7 @@ public enum ImageVersionType: Equatable, Hashable {
 
 private struct ImageLoadingCancelID: Hashable {}
 
+// TODO: Test me
 @Reducer
 public struct ImageDiffFeature {
     @ObservableState
@@ -60,7 +61,7 @@ public struct ImageDiffFeature {
 
             case let .selectedFileChanged(repoFolder, selectedFile):
                 let cancelEffect: Effect<Action> = .send(.cancelLoading)
-                
+
                 guard let repoFolder, let selectedFile, selectedFile.isImageFile else {
                     state.previousVersionState = nil
                     state.currentVersionState = nil
@@ -88,7 +89,7 @@ public struct ImageDiffFeature {
                             gitService: gitService,
                             send: send
                         )
-                        
+
                         if shouldLoadPreviousVersion {
                             await send(.startImageLoading(.previous))
                             async let previousTask: () = loadImageForVersion(
@@ -98,7 +99,7 @@ public struct ImageDiffFeature {
                                 gitService: gitService,
                                 send: send
                             )
-                            
+
                             await currentTask
                             await previousTask
                         } else {
@@ -107,7 +108,7 @@ public struct ImageDiffFeature {
                     }
                     .cancellable(id: ImageLoadingCancelID())
                 )
-                
+
             case let .startImageLoading(version):
                 // Set specific version to loading state
                 switch version {
@@ -136,7 +137,7 @@ public struct ImageDiffFeature {
                     }
                 }
                 return .none
-                
+
             case .cancelLoading:
                 return .cancel(id: ImageLoadingCancelID())
             }
@@ -147,7 +148,7 @@ public struct ImageDiffFeature {
         guard let nsImage = NSImage(data: data) else { return nil }
         return Image(nsImage: nsImage)
     }
-    
+
     private func loadImageForVersion(
         _ version: ImageVersionType,
         repoFolder: URL,
@@ -157,7 +158,7 @@ public struct ImageDiffFeature {
     ) async {
         do {
             let data: Data
-            
+
             switch version {
             case .current:
                 let fileURL = repoFolder.appendingPathComponent(filePath)
@@ -165,19 +166,19 @@ public struct ImageDiffFeature {
             case .previous:
                 let result = gitService.showFile(repoFolder, "HEAD", filePath)
                 switch result {
-                case .success(let gitData):
+                case let .success(gitData):
                     data = gitData
-                case .failure(let error):
+                case let .failure(error):
                     await send(.imageLoaded(version, .failure(error)))
                     return
                 }
             }
-            
+
             guard let image = convertDataToImage(data) else {
                 await send(.imageLoaded(version, .failure(.fileSystemError("Could not create image from data"))))
                 return
             }
-            
+
             await send(.imageLoaded(version, .success(image)))
         } catch {
             await send(.imageLoaded(version, .failure(.fileSystemError(error.localizedDescription))))
