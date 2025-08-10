@@ -43,55 +43,60 @@ struct GestureOverlayView: NSViewRepresentable {
 
     /// Coordinator that handles all gesture recognition and delegates to ZoomPanState
     class Coordinator: NSObject {
-        var parent: GestureOverlayView
+        private var parent: GestureOverlayView
 
         init(_ parent: GestureOverlayView) {
             self.parent = parent
         }
 
-        @objc func handlePan(_ gesture: NSPanGestureRecognizer) {
+        private var initialOffset: CGSize = .zero
+        private var initialScale: CGFloat = 1.0
+
+        @objc
+        fileprivate func handlePan(_ gesture: NSPanGestureRecognizer) {
             let translation = gesture.translation(in: gesture.view)
 
             switch gesture.state {
+            case .began:
+                initialOffset = parent.zoomPanState.offset
             case .changed:
                 // Only allow panning when zoomed in
-                if parent.zoomPanState.scale > 1.0 {
-                    // Flip the y-axis to match SwiftUI coordinate system
-                    parent.zoomPanState.updateOffset(gestureTranslation: CGSize(width: translation.x, height: -translation.y))
-                }
-            case .ended, .cancelled:
-                if parent.zoomPanState.scale > 1.0 {
-                    parent.zoomPanState.finalizeOffset()
-                }
-                gesture.setTranslation(.zero, in: gesture.view)
-            case .failed:
-                gesture.setTranslation(.zero, in: gesture.view)
+                guard parent.zoomPanState.scale > 1.0 else { break }
+                // Flip the y-axis to match SwiftUI coordinate system
+                let newOffset = CGSize(
+                    width: initialOffset.width + translation.x,
+                    height: initialOffset.height - translation.y
+                )
+                parent.zoomPanState.offset = newOffset
+            case .cancelled, .failed:
+                parent.zoomPanState.offset = initialOffset
             default:
                 break
             }
         }
 
-        @objc func handleMagnification(_ gesture: NSMagnificationGestureRecognizer) {
+        @objc
+        fileprivate func handleMagnification(_ gesture: NSMagnificationGestureRecognizer) {
             switch gesture.state {
+            case .began:
+                initialScale = parent.zoomPanState.scale
             case .changed:
-                parent.zoomPanState.updateScale(gestureScale: 1.0 + gesture.magnification)
-            case .ended, .cancelled:
-                parent.zoomPanState.finalizeScale()
-                gesture.magnification = 0
-            case .failed:
-                gesture.magnification = 0
+                parent.zoomPanState.scale = initialScale * (1.0 + gesture.magnification)
+            case .cancelled, .failed:
+                parent.zoomPanState.scale = initialScale
             default:
                 break
             }
         }
 
-        @objc func handleDoubleClick(_: NSClickGestureRecognizer) {
+        @objc
+        fileprivate func handleDoubleClick(_: NSClickGestureRecognizer) {
             withAnimation(.easeInOut(duration: 0.3)) {
                 parent.zoomPanState.reset()
             }
         }
 
-        func handleScrollWheel(_ event: NSEvent) {
+        fileprivate func handleScrollWheel(_ event: NSEvent) {
             // Only handle scroll when zoomed in
             guard parent.zoomPanState.scale > 1.0 else {
                 return
@@ -104,12 +109,6 @@ struct GestureOverlayView: NSViewRepresentable {
             )
 
             parent.zoomPanState.offset = newOffset
-            parent.zoomPanState.constrainValues()
-
-            // Only finalize when the scroll gesture ends
-            if event.phase == .ended || event.momentumPhase == .ended {
-                parent.zoomPanState.finalizeOffset()
-            }
         }
     }
 }
