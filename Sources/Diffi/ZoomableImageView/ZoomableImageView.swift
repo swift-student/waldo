@@ -4,21 +4,34 @@ import SwiftUI
 /// Combines SwiftUI's transform modifiers with an NSView overlay for comprehensive gesture support.
 struct ZoomableImageView: View {
     let image: Image
+    let imageSize: CGSize
     @Bindable var zoomPanState: ZoomPanState
 
     var body: some View {
-        ZStack {
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .scaleEffect(zoomPanState.scale)
-                .offset(zoomPanState.offset)
-                .clipped()
-                .allowsHitTesting(false)
+        GeometryReader { geometry in
+            ZStack {
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .scaleEffect(zoomPanState.scale)
+                    .offset(zoomPanState.offset)
+                    .clipped()
+                    .allowsHitTesting(false)
+                    .onAppear {
+                        updateDimensions(containerSize: geometry.size)
+                    }
+                    .onChange(of: geometry.size) { _, newSize in
+                        updateDimensions(containerSize: newSize)
+                    }
 
-            // NSView overlay handles all gestures
-            GestureOverlayView(zoomPanState: zoomPanState)
+                GestureOverlayView(zoomPanState: zoomPanState)
+            }
         }
+    }
+    
+    private func updateDimensions(containerSize: CGSize) {
+        zoomPanState.containerSize = containerSize
+        zoomPanState.imageSize = imageSize
     }
 }
 

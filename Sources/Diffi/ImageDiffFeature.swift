@@ -4,9 +4,14 @@ import Foundation
 import Git
 import SwiftUI
 
+public struct LoadedImage: Equatable {
+    public let image: Image
+    public let size: CGSize
+}
+
 public enum ImageLoadState: Equatable {
     case loading
-    case loaded(Image)
+    case loaded(LoadedImage)
     case error(GitError)
 }
 
@@ -40,7 +45,7 @@ public struct ImageDiffFeature {
         case onAppear
         case selectedFileChanged(repoFolder: URL?, selectedFile: PickableFile?)
         case startImageLoading(ImageVersionType)
-        case imageLoaded(ImageVersionType, Result<Image, GitError>)
+        case imageLoaded(ImageVersionType, Result<LoadedImage, GitError>)
         case cancelLoading
     }
 
@@ -123,15 +128,15 @@ public struct ImageDiffFeature {
                 switch version {
                 case .current:
                     switch result {
-                    case let .success(image):
-                        state.currentVersionState = .loaded(image)
+                    case let .success(loadedImage):
+                        state.currentVersionState = .loaded(loadedImage)
                     case let .failure(error):
                         state.currentVersionState = .error(error)
                     }
                 case .previous:
                     switch result {
-                    case let .success(image):
-                        state.previousVersionState = .loaded(image)
+                    case let .success(loadedImage):
+                        state.previousVersionState = .loaded(loadedImage)
                     case let .failure(error):
                         state.previousVersionState = .error(error)
                     }
@@ -144,9 +149,9 @@ public struct ImageDiffFeature {
         }
     }
 
-    private func convertDataToImage(_ data: Data) -> Image? {
+    private func convertDataToImage(_ data: Data) -> LoadedImage? {
         guard let nsImage = NSImage(data: data) else { return nil }
-        return Image(nsImage: nsImage)
+        return LoadedImage(image: Image(nsImage: nsImage), size: nsImage.size)
     }
 
     private func loadImageForVersion(
@@ -174,12 +179,12 @@ public struct ImageDiffFeature {
                 }
             }
 
-            guard let image = convertDataToImage(data) else {
+            guard let loadedImage = convertDataToImage(data) else {
                 await send(.imageLoaded(version, .failure(.fileSystemError("Could not create image from data"))))
                 return
             }
 
-            await send(.imageLoaded(version, .success(image)))
+            await send(.imageLoaded(version, .success(loadedImage)))
         } catch {
             await send(.imageLoaded(version, .failure(.fileSystemError(error.localizedDescription))))
         }

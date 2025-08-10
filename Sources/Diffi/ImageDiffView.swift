@@ -23,8 +23,8 @@ struct ImageVersionView: View {
         switch state {
         case .loading:
             ProgressView("Loading...")
-        case let .loaded(image):
-            ZoomableImageView(image: image, zoomPanState: zoomPanState)
+        case let .loaded(loadedImage):
+            ZoomableImageView(image: loadedImage.image, imageSize: loadedImage.size, zoomPanState: zoomPanState)
         case let .error(error):
             VStack {
                 Image(systemName: "exclamationmark.triangle")
