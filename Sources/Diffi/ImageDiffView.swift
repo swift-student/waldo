@@ -24,12 +24,12 @@ struct ImageVersionView: View {
         case .loading:
             ProgressView("Loading...")
         case let .loaded(image):
-            ZoomPanImageView(image: image, zoomPanState: zoomPanState)
+            ZoomableImageView(image: image, zoomPanState: zoomPanState)
         case let .error(error):
             VStack {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 50))
-                    
+
                 Text("Could not load image")
                     .foregroundColor(.secondary)
                 Text(error.debugDescription)
