@@ -6,31 +6,30 @@ import SwiftUI
 struct ImageVersionView: View {
     let title: String
     let state: ImageLoadState?
-    
+    @Bindable var zoomPanState: ZoomPanState
+
     var body: some View {
         VStack {
             Text(title)
                 .font(.headline)
-            
+
             content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     @ViewBuilder
     private var content: some View {
         switch state {
         case .loading:
             ProgressView("Loading...")
         case let .loaded(image):
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fit)
+            ZoomPanImageView(image: image, zoomPanState: zoomPanState)
         case let .error(error):
             VStack {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 50))
-                    .foregroundColor(.orange)
+                    
                 Text("Could not load image")
                     .foregroundColor(.secondary)
                 Text(error.debugDescription)
@@ -45,6 +44,7 @@ struct ImageVersionView: View {
 
 struct ImageDiffView: View {
     @Bindable var store: StoreOf<ImageDiffFeature>
+    @State private var zoomPanState = ZoomPanState()
 
     var body: some View {
         Group {
@@ -52,18 +52,21 @@ struct ImageDiffView: View {
                 HStack(spacing: 20) {
                     ImageVersionView(
                         title: previousVersionTitle,
-                        state: store.previousVersionState
+                        state: store.previousVersionState,
+                        zoomPanState: zoomPanState
                     )
-                    
+
                     ImageVersionView(
                         title: currentVersionTitle,
-                        state: store.currentVersionState
+                        state: store.currentVersionState,
+                        zoomPanState: zoomPanState
                     )
                 }
             } else {
                 ImageVersionView(
                     title: currentVersionTitle,
-                    state: store.currentVersionState
+                    state: store.currentVersionState,
+                    zoomPanState: zoomPanState
                 )
             }
         }
@@ -90,6 +93,4 @@ struct ImageDiffView: View {
             return "After (Working)"
         }
     }
-
 }
-
