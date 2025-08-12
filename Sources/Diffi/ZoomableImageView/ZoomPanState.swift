@@ -28,10 +28,10 @@ class ZoomPanState {
 
     /// Current pan offset from the center position
     var _offset: CGSize = .zero
-    
+
     /// Size of the image in its natural dimensions
     var imageSize: CGSize = .zero
-    
+
     /// Size of the container/viewport
     var containerSize: CGSize = .zero
 
@@ -52,10 +52,10 @@ class ZoomPanState {
         // Calculate the fitted dimensions (how the image appears at scale = 1.0)
         let imageAspect = imageSize.width / imageSize.height
         let containerAspect = containerSize.width / containerSize.height
-        
+
         let fittedWidth: CGFloat
         let fittedHeight: CGFloat
-        
+
         if imageAspect > containerAspect {
             // Image is wider - fits to container width
             fittedWidth = containerSize.width
@@ -65,48 +65,23 @@ class ZoomPanState {
             fittedHeight = containerSize.height
             fittedWidth = containerSize.height * imageAspect
         }
-        
+
         // Scale the fitted dimensions by the current zoom level
         let scaledWidth = fittedWidth * scale
         let scaledHeight = fittedHeight * scale
-        
-        // Calculate maximum pan distance
-        // Simple rule: you can pan as far as needed to see all parts of the scaled image
+
+        // Calculate maximum pan distance so you can pan as far as needed to see all parts of the scaled image
         let maxOffsetX = max(0, (scaledWidth - containerSize.width) / 2)
         let maxOffsetY = max(0, (scaledHeight - containerSize.height) / 2)
-        
-        // But allow some minimal panning when zoomed in, even if the scaled image
-        // is smaller than the container (this handles the landscape case)
-        let finalMaxOffsetX: CGFloat
-        let finalMaxOffsetY: CGFloat
-        
-        if scale > 1.0 {
-            // When zoomed, ensure minimum pan range to see different parts of image
-            finalMaxOffsetX = max(maxOffsetX, (fittedWidth * (scale - 1.0)) / 2)
-            finalMaxOffsetY = max(maxOffsetY, (fittedHeight * (scale - 1.0)) / 2)
-        } else {
-            finalMaxOffsetX = 0
-            finalMaxOffsetY = 0
-        }
-        
-        // Debug logging  
-        print("Scale: \(scale)")
-        print("Image: \(imageSize.width)x\(imageSize.height), Container: \(containerSize.width)x\(containerSize.height)")
-        print("Image aspect: \(imageAspect), Container aspect: \(containerAspect)")
-        print("Fitted: \(fittedWidth)x\(fittedHeight)")
-        print("Scaled: \(scaledWidth)x\(scaledHeight)")
-        print("Max offset: \(finalMaxOffsetX)x\(finalMaxOffsetY)")
-        print("Requested offset: \(offset.width)x\(offset.height)")
-        print("---")
-        
+
+        let finalMaxOffsetX = max(maxOffsetX, (fittedWidth * (scale - 1.0)) / 2)
+        let finalMaxOffsetY = max(maxOffsetY, (fittedHeight * (scale - 1.0)) / 2)
+
         let clampedOffset = CGSize(
             width: min(max(-finalMaxOffsetX, offset.width), finalMaxOffsetX),
             height: min(max(-finalMaxOffsetY, offset.height), finalMaxOffsetY)
         )
-        
-        print("Final offset: \(clampedOffset.width)x\(clampedOffset.height)")
-        print("===")
-        
+
         _offset = clampedOffset
     }
 }
