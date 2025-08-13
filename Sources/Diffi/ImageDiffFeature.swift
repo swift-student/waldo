@@ -20,6 +20,11 @@ public enum ImageVersionType: Equatable, Hashable {
     case previous
 }
 
+public enum ImageDiffViewMode: Equatable, CaseIterable {
+    case sideBySide
+    case onionSkin
+}
+
 private struct ImageLoadingCancelID: Hashable {}
 
 // TODO: Test me
@@ -31,6 +36,8 @@ public struct ImageDiffFeature {
         @SharedReader var repoFolder: URL?
         var previousVersionState: ImageLoadState? = .loading
         var currentVersionState: ImageLoadState? = .loading
+        var viewMode: ImageDiffViewMode = .sideBySide
+        var opacityBlend: Double = 0.5
 
         init(
             selectedFile: Shared<PickableFile?>,
@@ -47,6 +54,8 @@ public struct ImageDiffFeature {
         case startImageLoading(ImageVersionType)
         case imageLoaded(ImageVersionType, Result<LoadedImage, GitError>)
         case cancelLoading
+        case setViewMode(ImageDiffViewMode)
+        case setOpacityBlend(Double)
     }
 
     @Dependency(\.gitService) var gitService
@@ -115,7 +124,6 @@ public struct ImageDiffFeature {
                 )
 
             case let .startImageLoading(version):
-                // Set specific version to loading state
                 switch version {
                 case .current:
                     state.currentVersionState = .loading
@@ -145,6 +153,14 @@ public struct ImageDiffFeature {
 
             case .cancelLoading:
                 return .cancel(id: ImageLoadingCancelID())
+
+            case let .setViewMode(mode):
+                state.viewMode = mode
+                return .none
+
+            case let .setOpacityBlend(blend):
+                state.opacityBlend = max(0.0, min(1.0, blend))
+                return .none
             }
         }
     }

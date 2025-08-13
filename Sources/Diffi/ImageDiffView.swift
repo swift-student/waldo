@@ -48,32 +48,66 @@ struct ImageDiffView: View {
 
     var body: some View {
         Group {
-            if store.previousVersionState != nil {
-                HStack(spacing: 20) {
-                    ImageVersionView(
-                        title: previousVersionTitle,
-                        state: store.previousVersionState,
-                        zoomPanState: zoomPanState
-                    )
-
-                    ImageVersionView(
-                        title: currentVersionTitle,
-                        state: store.currentVersionState,
-                        zoomPanState: zoomPanState
-                    )
-                }
-            } else {
-                ImageVersionView(
-                    title: currentVersionTitle,
-                    state: store.currentVersionState,
-                    zoomPanState: zoomPanState
-                )
+            switch store.viewMode {
+            case .sideBySide:
+                sideBySideContent
+            case .onionSkin:
+                onionSkinContent
             }
         }
         .padding()
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Picker("View Mode", selection: Binding(
+                    get: { store.viewMode },
+                    set: { store.send(.setViewMode($0)) }
+                )) {
+                    Image(systemName: "rectangle.split.2x1")
+                        .tag(ImageDiffViewMode.sideBySide)
+                    Image(systemName: "circle.lefthalf.filled")
+                        .tag(ImageDiffViewMode.onionSkin)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 120)
+            }
+        }
         .onAppear {
             store.send(.onAppear)
         }
+    }
+
+    @ViewBuilder
+    private var sideBySideContent: some View {
+        HStack(spacing: 20) {
+            if store.previousVersionState != nil {
+                ImageVersionView(
+                    title: previousVersionTitle,
+                    state: store.previousVersionState,
+                    zoomPanState: zoomPanState
+                )
+            }
+
+            ImageVersionView(
+                title: currentVersionTitle,
+                state: store.currentVersionState,
+                zoomPanState: zoomPanState
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var onionSkinContent: some View {
+        OnionSkinImageView(
+            previousVersionState: store.previousVersionState,
+            currentVersionState: store.currentVersionState,
+            opacityBlend: store.opacityBlend,
+            previousVersionTitle: previousVersionTitle,
+            currentVersionTitle: currentVersionTitle,
+            zoomPanState: zoomPanState,
+            onOpacityChanged: { blend in
+                store.send(.setOpacityBlend(blend))
+            }
+        )
     }
 
     private var previousVersionTitle: String {
