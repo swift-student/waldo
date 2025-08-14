@@ -13,6 +13,7 @@ struct ZoomableImageView: View {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
+                    .frame(width: zoomPanState.expandedFrameSize.width, height: zoomPanState.expandedFrameSize.height)
                     .scaleEffect(zoomPanState.scale)
                     .offset(zoomPanState.offset)
                     .clipped()

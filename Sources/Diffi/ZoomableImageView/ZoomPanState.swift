@@ -41,18 +41,15 @@ class ZoomPanState {
     /// Maximum allowed zoom level
     private let maxScale: CGFloat = 5.0
 
-    /// Resets zoom and pan to default state.
-    /// Called when user double-clicks or when programmatically resetting view.
-    func reset() {
-        scale = minScale
-        offset = .zero
+    private var imageAspect: CGFloat {
+        imageSize.width / imageSize.height
     }
 
-    private func setOffset(_ offset: CGSize) {
-        // Calculate the fitted dimensions (how the image appears at scale = 1.0)
-        let imageAspect = imageSize.width / imageSize.height
-        let containerAspect = containerSize.width / containerSize.height
+    private var containerAspect: CGFloat {
+        containerSize.width / containerSize.height
+    }
 
+    private var fittedSize: CGSize {
         let fittedWidth: CGFloat
         let fittedHeight: CGFloat
 
@@ -66,20 +63,36 @@ class ZoomPanState {
             fittedWidth = containerSize.height * imageAspect
         }
 
-        // Scale the fitted dimensions by the current zoom level
-        let scaledWidth = fittedWidth * scale
-        let scaledHeight = fittedHeight * scale
+        return CGSize(width: fittedWidth, height: fittedHeight)
+    }
 
-        // Calculate maximum pan distance so you can pan as far as needed to see all parts of the scaled image
+    /// The frame size that expands proportionally with zoom to give more space for scaling
+    var expandedFrameSize: CGSize {
+        let expandedWidth = min(fittedSize.width * scale, containerSize.width)
+        let expandedHeight = min(fittedSize.height * scale, containerSize.height)
+
+        return CGSize(width: expandedWidth, height: expandedHeight)
+    }
+
+    /// Resets zoom and pan to default state.
+    /// Called when user double-clicks or when programmatically resetting view.
+    func reset() {
+        scale = minScale
+        offset = .zero
+    }
+
+    private func setOffset(_ offset: CGSize) {
+        let scaledWidth = fittedSize.width * scale
+        let scaledHeight = fittedSize.height * scale
+
+        // Calculate maximum pan distance to keep image filling the container
+        // The scaled image content should not go beyond the container edges
         let maxOffsetX = max(0, (scaledWidth - containerSize.width) / 2)
         let maxOffsetY = max(0, (scaledHeight - containerSize.height) / 2)
 
-        let finalMaxOffsetX = max(maxOffsetX, (fittedWidth * (scale - 1.0)) / 2)
-        let finalMaxOffsetY = max(maxOffsetY, (fittedHeight * (scale - 1.0)) / 2)
-
         let clampedOffset = CGSize(
-            width: min(max(-finalMaxOffsetX, offset.width), finalMaxOffsetX),
-            height: min(max(-finalMaxOffsetY, offset.height), finalMaxOffsetY)
+            width: min(max(-maxOffsetX, offset.width), maxOffsetX),
+            height: min(max(-maxOffsetY, offset.height), maxOffsetY)
         )
 
         _offset = clampedOffset
