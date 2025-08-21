@@ -8,15 +8,16 @@ struct FilePicker: View {
     var body: some View {
         List(store.files, id: \.self, selection: $store.selectedFile.sending(\.userSelectedFile)) { file in
             Text(file.path)
+                .truncationMode(.middle)
         }
         .navigationTitle("Files")
-        .onKeyPress(.init("k")) { 
+        .onKeyPress(.init("k")) {
             store.send(.navigateUp)
-            return .handled 
+            return .handled
         }
-        .onKeyPress(.init("j")) { 
+        .onKeyPress(.init("j")) {
             store.send(.navigateDown)
-            return .handled 
+            return .handled
         }
     }
 }
