@@ -3,7 +3,7 @@ import SwiftUI
 struct OnionSkinImageView: View {
     let previousVersionState: ImageLoadState?
     let currentVersionState: ImageLoadState?
-    let opacityBlend: Double
+    let blend: Double
     let previousVersionTitle: String
     let currentVersionTitle: String
     @Bindable var zoomPanState: ZoomPanState
@@ -35,10 +35,10 @@ struct OnionSkinImageView: View {
                         imageSize: currentImage.size,
                         zoomPanState: zoomPanState
                     )
-                    .opacity(opacityBlend)
+                    .opacity(blend)
                 }
                 OpacitySliderView(
-                    value: opacityBlend,
+                    value: blend,
                     previousTitle: previousVersionTitle,
                     currentTitle: currentVersionTitle,
                     onValueChanged: onOpacityChanged

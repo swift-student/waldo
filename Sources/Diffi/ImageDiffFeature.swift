@@ -25,7 +25,9 @@ public enum ImageDiffViewMode: Equatable, CaseIterable {
     case onionSkin
 }
 
-private struct ImageLoadingCancelID: Hashable {}
+private enum CancellableID {
+    case imageLoading
+}
 
 // TODO: Test me
 @Reducer
@@ -37,7 +39,10 @@ public struct ImageDiffFeature {
         var previousVersionState: ImageLoadState? = .loading
         var currentVersionState: ImageLoadState? = .loading
         var viewMode: ImageDiffViewMode = .sideBySide
-        var opacityBlend: Double = 0.5
+
+        /// The blend amount between the previous and current versions, where 0.0 is all previous, and 1.0 is all current.
+        /// Not applicable to `sideBySide` mode
+        var blend: Double = 0.5
 
         init(
             selectedFile: Shared<PickableFile?>,
@@ -51,11 +56,10 @@ public struct ImageDiffFeature {
     public enum Action: Equatable {
         case onAppear
         case selectedFileChanged(repoFolder: URL?, selectedFile: PickableFile?)
-        case startImageLoading(ImageVersionType)
         case imageLoaded(ImageVersionType, Result<LoadedImage, GitError>)
         case cancelLoading
         case setViewMode(ImageDiffViewMode)
-        case setOpacityBlend(Double)
+        case setBlend(Double)
     }
 
     @Dependency(\.gitService) var gitService
@@ -95,7 +99,6 @@ public struct ImageDiffFeature {
                 return .merge(
                     cancelEffect,
                     .run { [gitService] send in
-                        await send(.startImageLoading(.current))
                         async let currentTask: () = loadImageForVersion(
                             .current,
                             repoFolder: repoFolder,
@@ -104,33 +107,24 @@ public struct ImageDiffFeature {
                             send: send
                         )
 
-                        if shouldLoadPreviousVersion {
-                            await send(.startImageLoading(.previous))
-                            async let previousTask: () = loadImageForVersion(
-                                .previous,
-                                repoFolder: repoFolder,
-                                filePath: selectedFile.path,
-                                gitService: gitService,
-                                send: send
-                            )
-
+                        guard shouldLoadPreviousVersion else {
                             await currentTask
-                            await previousTask
-                        } else {
-                            await currentTask
+                            return
                         }
-                    }
-                    .cancellable(id: ImageLoadingCancelID())
-                )
 
-            case let .startImageLoading(version):
-                switch version {
-                case .current:
-                    state.currentVersionState = .loading
-                case .previous:
-                    state.previousVersionState = .loading
-                }
-                return .none
+                        async let previousTask: () = loadImageForVersion(
+                            .previous,
+                            repoFolder: repoFolder,
+                            filePath: selectedFile.path,
+                            gitService: gitService,
+                            send: send
+                        )
+
+                        await currentTask
+                        await previousTask
+                    }
+                    .cancellable(id: CancellableID.imageLoading)
+                )
 
             case let .imageLoaded(version, result):
                 switch version {
@@ -152,14 +146,14 @@ public struct ImageDiffFeature {
                 return .none
 
             case .cancelLoading:
-                return .cancel(id: ImageLoadingCancelID())
+                return .cancel(id: CancellableID.imageLoading)
 
             case let .setViewMode(mode):
                 state.viewMode = mode
                 return .none
 
-            case let .setOpacityBlend(blend):
-                state.opacityBlend = max(0.0, min(1.0, blend))
+            case let .setBlend(blend):
+                state.blend = max(0.0, min(1.0, blend))
                 return .none
             }
         }

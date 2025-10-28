@@ -4,6 +4,7 @@ import ComposableArchitecture
 import Foundation
 @testable import Git
 import Testing
+import SwiftUI
 
 @Suite("DiffFeature Tests")
 struct DiffFeatureTests {
@@ -190,6 +191,8 @@ struct DiffFeatureTests {
         }
     }
 }
+
+
 
 private extension GitError {
     static let testError = GitError.failedToOpenRepo(Clibgit2Error(code: .notFound))

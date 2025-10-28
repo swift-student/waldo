@@ -100,12 +100,12 @@ struct ImageDiffView: View {
         OnionSkinImageView(
             previousVersionState: store.previousVersionState,
             currentVersionState: store.currentVersionState,
-            opacityBlend: store.opacityBlend,
+            blend: store.blend,
             previousVersionTitle: previousVersionTitle,
             currentVersionTitle: currentVersionTitle,
             zoomPanState: zoomPanState,
             onOpacityChanged: { blend in
-                store.send(.setOpacityBlend(blend))
+                store.send(.setBlend(blend))
             }
         )
     }
