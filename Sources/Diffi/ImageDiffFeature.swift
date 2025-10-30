@@ -12,7 +12,7 @@ public struct LoadedImage: Equatable {
 public enum ImageLoadState: Equatable {
     case loading
     case loaded(LoadedImage)
-    case error(GitError)
+    case error(ImageDiffError)
 }
 
 public enum ImageVersionType: Equatable, Hashable {
@@ -29,7 +29,6 @@ private enum CancellableID {
     case imageLoading
 }
 
-// TODO: Test me
 @Reducer
 public struct ImageDiffFeature {
     @ObservableState
@@ -56,13 +55,14 @@ public struct ImageDiffFeature {
     public enum Action: Equatable {
         case onAppear
         case selectedFileChanged(repoFolder: URL?, selectedFile: PickableFile?)
-        case imageLoaded(ImageVersionType, Result<LoadedImage, GitError>)
+        case imageLoaded(ImageVersionType, Result<LoadedImage, ImageDiffError>)
         case cancelLoading
         case setViewMode(ImageDiffViewMode)
         case setBlend(Double)
     }
 
     @Dependency(\.gitService) var gitService
+    @Dependency(\.imageService) var imageService
 
     public init() {}
 
@@ -89,41 +89,34 @@ public struct ImageDiffFeature {
                 let shouldLoadPreviousVersion = selectedFile.status == .modified
 
                 state.currentVersionState = .loading
-
-                if shouldLoadPreviousVersion {
-                    state.previousVersionState = .loading
-                } else {
-                    state.previousVersionState = nil
-                }
+                state.previousVersionState = shouldLoadPreviousVersion ? .loading : nil
 
                 return .merge(
                     cancelEffect,
                     .run { [gitService] send in
-                        async let currentTask: () = loadImageForVersion(
+                        await loadImageForVersion(
                             .current,
                             repoFolder: repoFolder,
                             filePath: selectedFile.path,
                             gitService: gitService,
                             send: send
                         )
-
+                    }
+                        .cancellable(id: CancellableID.imageLoading),
+                    .run { [gitService] send in
                         guard shouldLoadPreviousVersion else {
-                            await currentTask
                             return
                         }
-
-                        async let previousTask: () = loadImageForVersion(
+                        
+                        await loadImageForVersion(
                             .previous,
                             repoFolder: repoFolder,
                             filePath: selectedFile.path,
                             gitService: gitService,
                             send: send
                         )
-
-                        await currentTask
-                        await previousTask
                     }
-                    .cancellable(id: CancellableID.imageLoading)
+                        .cancellable(id: CancellableID.imageLoading),
                 )
 
             case let .imageLoaded(version, result):
@@ -159,11 +152,6 @@ public struct ImageDiffFeature {
         }
     }
 
-    private func convertDataToImage(_ data: Data) -> LoadedImage? {
-        guard let nsImage = NSImage(data: data) else { return nil }
-        return LoadedImage(image: Image(nsImage: nsImage), size: nsImage.size)
-    }
-
     private func loadImageForVersion(
         _ version: ImageVersionType,
         repoFolder: URL,
@@ -184,19 +172,36 @@ public struct ImageDiffFeature {
                 case let .success(gitData):
                     data = gitData
                 case let .failure(error):
-                    await send(.imageLoaded(version, .failure(error)))
+                    await send(.imageLoaded(version, .failure(.gitError(error))))
                     return
                 }
             }
 
-            guard let loadedImage = convertDataToImage(data) else {
-                await send(.imageLoaded(version, .failure(.fileSystemError("Could not create image from data"))))
-                return
+            switch imageService.loadImage(data) {
+            case .success(let loadedImage):
+                await send(.imageLoaded(version, .success(loadedImage)))
+            case .failure:
+                await send(.imageLoaded(version, .failure(.badData)))
             }
-
-            await send(.imageLoaded(version, .success(loadedImage)))
         } catch {
             await send(.imageLoaded(version, .failure(.fileSystemError(error.localizedDescription))))
+        }
+    }
+}
+
+public enum ImageDiffError: Error, Equatable, CustomDebugStringConvertible {
+    case badData
+    case fileSystemError(String)
+    case gitError(GitError)
+
+    public var debugDescription: String {
+        switch self {
+        case .badData:
+            "Unable to load image from data"
+        case .fileSystemError(let errorDescription):
+            errorDescription
+        case .gitError(let error):
+            error.debugDescription
         }
     }
 }
