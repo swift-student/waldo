@@ -77,13 +77,48 @@ struct GestureOverlayView: NSViewRepresentable {
 
         @objc
         fileprivate func handleMagnification(_ gesture: NSMagnificationGestureRecognizer) {
+            guard let view = gesture.view else { return }
+
             switch gesture.state {
             case .began:
                 initialScale = parent.zoomPanState.scale
+                initialOffset = parent.zoomPanState.offset
+
             case .changed:
-                parent.zoomPanState.scale = initialScale * (1.0 + gesture.magnification)
+                let unclampedRatio = 1.0 + gesture.magnification
+                let unclampedTargetScale = initialScale * unclampedRatio
+
+                // Set the scale and allow the ZoomPanState to clamp it.
+                parent.zoomPanState.scale = unclampedTargetScale
+
+                // Now, read the clamped scale back to calculate the ratio for the offset.
+                // This ensures the offset calculation uses the *actual* scale, preventing panning when the zoom limit is reached.
+                let clampedScale = parent.zoomPanState.scale
+                let ratio = clampedScale / initialScale
+
+                let locationInView = gesture.location(in: view)
+                let location = CGPoint(
+                    x: locationInView.x,
+                    y: view.bounds.height - locationInView.y
+                )
+
+                let containerCenter = CGPoint(
+                    x: view.bounds.width / 2,
+                    y: view.bounds.height / 2
+                )
+
+                let targetOffsetX = (location.x - containerCenter.x) * (1 - ratio) + initialOffset.width * ratio
+                let targetOffsetY = (location.y - containerCenter.y) * (1 - ratio) + initialOffset.height * ratio
+
+                parent.zoomPanState.offset = CGSize(width: targetOffsetX, height: targetOffsetY)
+
+            case .ended:
+                break
+
             case .cancelled, .failed:
                 parent.zoomPanState.scale = initialScale
+                parent.zoomPanState.offset = initialOffset
+
             default:
                 break
             }
