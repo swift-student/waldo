@@ -55,6 +55,9 @@ struct ImageDiffView: View {
                 onionSkinContent
             }
         }
+        .onChange(of: store.selectedFile) {
+            zoomPanState.reset()
+        }
         .padding()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

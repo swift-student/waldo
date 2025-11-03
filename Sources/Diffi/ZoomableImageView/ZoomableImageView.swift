@@ -9,12 +9,17 @@ struct ZoomableImageView: View {
 
     var body: some View {
         GeometryReader { geometry in
+            let containerCenter = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            
             ZStack {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: zoomPanState.expandedFrameSize.width, height: zoomPanState.expandedFrameSize.height)
-                    .scaleEffect(zoomPanState.scale)
+                    .frame(
+                        width: zoomPanState.scaledSize.width,
+                        height: zoomPanState.scaledSize.height
+                    )
+                    .position(containerCenter)
                     .offset(zoomPanState.offset)
                     .clipped()
                     .allowsHitTesting(false)

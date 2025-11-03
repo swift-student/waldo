@@ -49,7 +49,14 @@ class ZoomPanState {
         containerSize.width / containerSize.height
     }
 
+    // TODO: Don't calculate this repeatedly
     private var fittedSize: CGSize {
+        let imageFits = imageSize.width <= containerSize.width && imageSize.height <= containerSize.height
+
+        guard !imageFits else {
+            return imageSize
+        }
+
         let fittedWidth: CGFloat
         let fittedHeight: CGFloat
 
@@ -66,12 +73,9 @@ class ZoomPanState {
         return CGSize(width: fittedWidth, height: fittedHeight)
     }
 
-    /// The frame size that expands proportionally with zoom to give more space for scaling
-    var expandedFrameSize: CGSize {
-        let expandedWidth = min(fittedSize.width * scale, containerSize.width)
-        let expandedHeight = min(fittedSize.height * scale, containerSize.height)
-
-        return CGSize(width: expandedWidth, height: expandedHeight)
+    // TODO: Don't calculate this repeatedly
+    var scaledSize: CGSize {
+        CGSize(width: fittedSize.width * scale, height: fittedSize.height * scale)
     }
 
     /// Resets zoom and pan to default state.
@@ -82,13 +86,10 @@ class ZoomPanState {
     }
 
     private func setOffset(_ offset: CGSize) {
-        let scaledWidth = fittedSize.width * scale
-        let scaledHeight = fittedSize.height * scale
-
         // Calculate maximum pan distance to keep image filling the container
         // The scaled image content should not go beyond the container edges
-        let maxOffsetX = max(0, (scaledWidth - containerSize.width) / 2)
-        let maxOffsetY = max(0, (scaledHeight - containerSize.height) / 2)
+        let maxOffsetX = max(0, (scaledSize.width - containerSize.width) / 2)
+        let maxOffsetY = max(0, (scaledSize.height - containerSize.height) / 2)
 
         let clampedOffset = CGSize(
             width: min(max(-maxOffsetX, offset.width), maxOffsetX),
