@@ -86,14 +86,13 @@ class ZoomPanState {
     }
 
     private func setOffset(_ offset: CGSize) {
-        // Calculate maximum pan distance to keep image filling the container
-        // The scaled image content should not go beyond the container edges
-        let maxOffsetX = max(0, (scaledSize.width - containerSize.width) / 2)
-        let maxOffsetY = max(0, (scaledSize.height - containerSize.height) / 2)
+        // Constrain the offset such that any edge of the image does not pass the center of the container.
+        let limitX = scaledSize.width / 2
+        let limitY = scaledSize.height / 2
 
         let clampedOffset = CGSize(
-            width: min(max(-maxOffsetX, offset.width), maxOffsetX),
-            height: min(max(-maxOffsetY, offset.height), maxOffsetY)
+            width: min(max(-limitX, offset.width), limitX),
+            height: min(max(-limitY, offset.height), limitY)
         )
 
         _offset = clampedOffset
