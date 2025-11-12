@@ -12,6 +12,7 @@ struct DiffiAppMain: App {
         WindowGroup {
             AppView(store: store)
         }
+        .windowToolbarStyle(.unified(showsTitle: false))
         .windowResizability(.contentMinSize)
     }
 }

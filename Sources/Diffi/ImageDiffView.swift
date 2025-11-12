@@ -3,19 +3,21 @@ import Foundation
 import Git
 import SwiftUI
 
+
+
 struct ImageVersionView: View {
-    let title: String
     let state: ImageLoadState?
     @Bindable var zoomPanState: ZoomPanState
+    var isDeleted: Bool = false
 
     var body: some View {
-        VStack {
-            Text(title)
-                .font(.headline)
-
-            content
+        GeometryReader { geometry in
+            ZStack {
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .opacity(isDeleted ? 0.3 : 1.0)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -25,7 +27,7 @@ struct ImageVersionView: View {
             ProgressView("Loading...")
         case let .loaded(loadedImage):
             ZoomableImageView(image: loadedImage.image, imageSize: loadedImage.size, zoomPanState: zoomPanState)
-        case let .error(error):
+        case .error(let error):
             VStack {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 50))
@@ -36,7 +38,7 @@ struct ImageVersionView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-        case .none:
+        case .deleted, .none:
             EmptyView()
         }
     }
@@ -60,6 +62,17 @@ struct ImageDiffView: View {
         }
         .padding()
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                StatusView(
+                    status: store.selectedFile?.status,
+                    previousState: store.previousVersionState,
+                    currentState: store.currentVersionState,
+                    viewMode: store.viewMode,
+                    blend: store.blend,
+                    onBlendChanged: { store.send(.setBlend($0)) }
+                )
+            }
+
             ToolbarItem(placement: .primaryAction) {
                 Picker("View Mode", selection: Binding(
                     get: { store.viewMode },
@@ -82,19 +95,25 @@ struct ImageDiffView: View {
     @ViewBuilder
     private var sideBySideContent: some View {
         HStack(spacing: 20) {
-            if store.previousVersionState != nil {
+            if store.selectedFile?.status == .deleted {
                 ImageVersionView(
-                    title: previousVersionTitle,
                     state: store.previousVersionState,
+                    zoomPanState: zoomPanState,
+                    isDeleted: true
+                )
+            } else {
+                if store.previousVersionState != nil {
+                    ImageVersionView(
+                        state: store.previousVersionState,
+                        zoomPanState: zoomPanState
+                    )
+                }
+
+                ImageVersionView(
+                    state: store.currentVersionState,
                     zoomPanState: zoomPanState
                 )
             }
-
-            ImageVersionView(
-                title: currentVersionTitle,
-                state: store.currentVersionState,
-                zoomPanState: zoomPanState
-            )
         }
     }
 
@@ -104,30 +123,10 @@ struct ImageDiffView: View {
             previousVersionState: store.previousVersionState,
             currentVersionState: store.currentVersionState,
             blend: store.blend,
-            previousVersionTitle: previousVersionTitle,
-            currentVersionTitle: currentVersionTitle,
             zoomPanState: zoomPanState,
             onOpacityChanged: { blend in
                 store.send(.setBlend(blend))
             }
         )
-    }
-
-    private var previousVersionTitle: String {
-        switch store.selectedFile?.status {
-        case .added, .untracked:
-            return "New File"
-        default:
-            return "Before (HEAD)"
-        }
-    }
-
-    private var currentVersionTitle: String {
-        switch store.selectedFile?.status {
-        case .added, .untracked:
-            return "Current (New)"
-        default:
-            return "After (Working)"
-        }
     }
 }

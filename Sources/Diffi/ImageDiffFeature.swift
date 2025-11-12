@@ -13,6 +13,7 @@ public enum ImageLoadState: Equatable {
     case loading
     case loaded(LoadedImage)
     case error(ImageDiffError)
+    case deleted
 }
 
 public enum ImageVersionType: Equatable, Hashable {
@@ -86,7 +87,26 @@ public struct ImageDiffFeature {
                     return cancelEffect
                 }
 
-                let shouldLoadPreviousVersion = selectedFile.status == .modified
+                if selectedFile.status == .deleted {
+                    state.currentVersionState = .deleted
+                    state.previousVersionState = .loading
+
+                    return .merge(
+                        cancelEffect,
+                        .run { [gitService] send in
+                            await loadImageForVersion(
+                                .previous,
+                                repoFolder: repoFolder,
+                                filePath: selectedFile.path,
+                                gitService: gitService,
+                                send: send
+                            )
+                        }
+                        .cancellable(id: CancellableID.imageLoading)
+                    )
+                }
+
+                let shouldLoadPreviousVersion = selectedFile.status == .modified || selectedFile.status == .renamed
 
                 state.currentVersionState = .loading
                 state.previousVersionState = shouldLoadPreviousVersion ? .loading : nil
@@ -102,12 +122,9 @@ public struct ImageDiffFeature {
                             send: send
                         )
                     }
-                        .cancellable(id: CancellableID.imageLoading),
+                    .cancellable(id: CancellableID.imageLoading),
                     .run { [gitService] send in
-                        guard shouldLoadPreviousVersion else {
-                            return
-                        }
-                        
+                        guard shouldLoadPreviousVersion else { return }
                         await loadImageForVersion(
                             .previous,
                             repoFolder: repoFolder,
@@ -116,7 +133,7 @@ public struct ImageDiffFeature {
                             send: send
                         )
                     }
-                        .cancellable(id: CancellableID.imageLoading),
+                    .cancellable(id: CancellableID.imageLoading)
                 )
 
             case let .imageLoaded(version, result):

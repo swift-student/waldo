@@ -1,7 +1,7 @@
 import Clibgit2
 
 extension Git {
-    enum Status {
+    public enum Status {
         static func list(repo: OpaquePointer, options: git_status_options) throws(GitError) -> OpaquePointer {
             var statusList: OpaquePointer?
             var options = options
