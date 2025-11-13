@@ -8,9 +8,12 @@ struct FilePicker: View {
     var body: some View {
         ScrollViewReader { proxy in
             List(store.files, id: \.self, selection: $store.selectedFile.sending(\.userSelectedFile)) { file in
-                Text(file.path)
-                    .truncationMode(.middle)
-                    .id(file.path)
+                HStack {
+                    StatusIcon(file.status)
+                    Text(file.path)
+                        .truncationMode(.middle)
+                }
+                .id(file.path)
             }
             .navigationTitle("Files")
             // TODO: Make keys configurable
@@ -29,3 +32,4 @@ struct FilePicker: View {
         }
     }
 }
+
