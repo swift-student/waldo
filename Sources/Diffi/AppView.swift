@@ -31,6 +31,10 @@ public struct AppView: View {
                     Text("Select a file to view details")
                 }
             }
+            .onKeyPress(.init("m")) {
+                store.send(.imageDiffFeature(.selectNextViewMode))
+                return .handled
+            }
         } else {
             FolderPicker(
                 store: store.scope(
@@ -40,5 +44,4 @@ public struct AppView: View {
             )
         }
     }
-
 }

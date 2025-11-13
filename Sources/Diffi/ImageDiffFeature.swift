@@ -59,6 +59,7 @@ public struct ImageDiffFeature {
         case imageLoaded(ImageVersionType, Result<LoadedImage, ImageDiffError>)
         case cancelLoading
         case setViewMode(ImageDiffViewMode)
+        case selectNextViewMode
         case setBlend(Double)
     }
 
@@ -160,6 +161,15 @@ public struct ImageDiffFeature {
 
             case let .setViewMode(mode):
                 state.viewMode = mode
+                return .none
+
+            case .selectNextViewMode:
+                let currentMode = state.viewMode
+                let allModes = ImageDiffViewMode.allCases
+                guard let currentIndex = allModes.firstIndex(of: currentMode) else { return .none }
+
+                let nextIndex = (currentIndex + 1) % allModes.count
+                state.viewMode = allModes[nextIndex]
                 return .none
 
             case let .setBlend(blend):

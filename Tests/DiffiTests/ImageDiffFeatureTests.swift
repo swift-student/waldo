@@ -60,6 +60,28 @@ struct ImageDiffFeatureTests {
 
     @MainActor
     @Test
+    func selectNextViewMode() async {
+        let store = TestStore(initialState: ImageDiffFeature.State(
+            selectedFile: Shared(value: nil)
+        )) {
+            ImageDiffFeature()
+        }
+
+        await store.send(.selectNextViewMode) {
+            $0.viewMode = .onionSkin
+        }
+
+        await store.send(.selectNextViewMode) {
+            $0.viewMode = .sideBySide
+        }
+
+        await store.send(.selectNextViewMode) {
+            $0.viewMode = .onionSkin
+        }
+    }
+
+    @MainActor
+    @Test
     func setBlend_WithinBounds() async {
         let store = TestStore(initialState: ImageDiffFeature.State(
             selectedFile: Shared(value: nil)
