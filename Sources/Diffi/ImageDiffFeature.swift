@@ -24,10 +24,20 @@ public enum ImageVersionType: Equatable, Hashable {
 public enum ImageDiffViewMode: Equatable, CaseIterable {
     case sideBySide
     case onionSkin
+
+    var blendable: Bool {
+        switch self {
+        case .onionSkin:
+            return true
+        case .sideBySide:
+            return false
+        }
+    }
 }
 
 private enum CancellableID {
     case imageLoading
+    case autoBlend
 }
 
 @Reducer
@@ -39,6 +49,7 @@ public struct ImageDiffFeature {
         var previousVersionState: ImageLoadState? = .loading
         var currentVersionState: ImageLoadState? = .loading
         var viewMode: ImageDiffViewMode = .sideBySide
+        var isAutoBlending = false
 
         /// The blend amount between the previous and current versions, where 0.0 is all previous, and 1.0 is all current.
         /// Not applicable to `sideBySide` mode
@@ -61,6 +72,7 @@ public struct ImageDiffFeature {
         case setViewMode(ImageDiffViewMode)
         case selectNextViewMode
         case setBlend(Double)
+        case toggleAutoBlend
     }
 
     @Dependency(\.gitService) var gitService
@@ -80,7 +92,11 @@ public struct ImageDiffFeature {
                 }
 
             case let .selectedFileChanged(repoFolder, selectedFile):
-                let cancelEffect: Effect<Action> = .send(.cancelLoading)
+                state.isAutoBlending = false
+                let cancelEffect: Effect<Action> = .merge(
+                    .send(.cancelLoading),
+                    .cancel(id: CancellableID.autoBlend)
+                )
 
                 guard let repoFolder, let selectedFile, selectedFile.isImageFile else {
                     state.previousVersionState = nil
@@ -161,6 +177,10 @@ public struct ImageDiffFeature {
 
             case let .setViewMode(mode):
                 state.viewMode = mode
+                if !mode.blendable, state.isAutoBlending {
+                    state.isAutoBlending = false
+                    return .cancel(id: CancellableID.autoBlend)
+                }
                 return .none
 
             case .selectNextViewMode:
@@ -169,12 +189,56 @@ public struct ImageDiffFeature {
                 guard let currentIndex = allModes.firstIndex(of: currentMode) else { return .none }
 
                 let nextIndex = (currentIndex + 1) % allModes.count
-                state.viewMode = allModes[nextIndex]
-                return .none
+                let nextMode = allModes[nextIndex]
+                // TODO: Don't send here, it is discouraged
+                // Use a func instead to share logic
+                return .send(.setViewMode(nextMode))
 
             case let .setBlend(blend):
                 state.blend = max(0.0, min(1.0, blend))
                 return .none
+
+            case .toggleAutoBlend:
+                // TODO: Extract/test
+                guard state.viewMode.blendable else { return .none }
+                state.isAutoBlending.toggle()
+
+                if state.isAutoBlending {
+                    let maxDuration = 0.7
+                    let pauseDuration = 0.3
+                    let currentBlend = state.blend
+
+                    let initialTarget: Double
+                    let initialDistance: Double
+
+                    if currentBlend < 0.5 {
+                        initialTarget = 1.0
+                        initialDistance = 1.0 - currentBlend
+                    } else {
+                        initialTarget = 0.0
+                        initialDistance = currentBlend
+                    }
+
+                    let initialDuration = maxDuration * initialDistance
+
+                    return .run { send in
+                        // First, animate to the initial target
+                        await send(.setBlend(initialTarget), animation: .linear(duration: initialDuration))
+                        try await Task.sleep(for: .seconds(initialDuration + pauseDuration))
+
+                        var currentTarget = initialTarget
+
+                        // Now, loop forever, alternating
+                        while true {
+                            currentTarget = currentTarget == 1.0 ? 0.0 : 1.0
+                            await send(.setBlend(currentTarget), animation: .linear(duration: maxDuration))
+                            try await Task.sleep(for: .seconds(maxDuration + pauseDuration))
+                        }
+                    }
+                    .cancellable(id: CancellableID.autoBlend)
+                } else {
+                    return .cancel(id: CancellableID.autoBlend)
+                }
             }
         }
     }

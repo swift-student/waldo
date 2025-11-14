@@ -8,6 +8,7 @@ struct StatusView: View {
     let previousState: ImageLoadState?
     let currentState: ImageLoadState?
     let viewMode: ImageDiffViewMode
+    let isAutoBlending: Bool
     let blend: Double
     let onBlendChanged: (Double) -> Void
 
@@ -63,7 +64,8 @@ struct StatusView: View {
                     }
                 }
             default:
-                VStack(alignment: .trailing) {
+                Spacer()
+                VStack {
                     Text("Before")
                         .font(.headline)
                     if let size = previousState?.size {
@@ -72,16 +74,17 @@ struct StatusView: View {
                     }
                 }
 
-                Divider()
-                    .padding(.horizontal)
+                Spacer()
 
-                VStack(alignment: .leading) {
+                VStack {
                     Text("After")
                         .font(.headline)
                     if let size = currentState?.size {
                         sizeLabel(size: size)
                     }
                 }
+
+                Spacer()
             }
         }
     }
@@ -99,9 +102,11 @@ struct StatusView: View {
                     }
                 }
 
-                Slider(value: Binding(get: { blend }, set: onBlendChanged), in: 0.0 ... 1.0)
-                    .frame(minWidth: 200)
+                CustomSlider(value: Binding(get: { blend }, set: onBlendChanged))
+                    .frame(width: 200)
                     .padding(.horizontal)
+                    .disabled(isAutoBlending)
+                    .animation(.easeInOut(duration: 0.15), value: isAutoBlending)
 
                 VStack(alignment: .leading) {
                     Text("After")

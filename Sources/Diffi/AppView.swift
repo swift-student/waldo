@@ -35,6 +35,10 @@ public struct AppView: View {
                 store.send(.imageDiffFeature(.selectNextViewMode))
                 return .handled
             }
+            .onKeyPress(.init("a")) {
+                store.send(.imageDiffFeature(.toggleAutoBlend))
+                return .handled
+            }
         } else {
             FolderPicker(
                 store: store.scope(

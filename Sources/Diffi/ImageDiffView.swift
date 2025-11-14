@@ -49,31 +49,64 @@ struct ImageDiffView: View {
     @State private var zoomPanState = ZoomPanState()
 
     var body: some View {
-        Group {
-            switch store.viewMode {
-            case .sideBySide:
-                sideBySideContent
-            case .onionSkin:
-                onionSkinContent
+        VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+
+                    StatusView(
+                        status: store.selectedFile?.status,
+                        previousState: store.previousVersionState,
+                        currentState: store.currentVersionState,
+                        viewMode: store.viewMode,
+                        isAutoBlending: store.isAutoBlending,
+                        blend: store.blend,
+                        onBlendChanged: { store.send(.setBlend($0)) }
+                    )
+
+                    Spacer()
+                }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(.bar)
+
+            Divider()
+
+            Group {
+                switch store.viewMode {
+                case .sideBySide:
+                    sideBySideContent
+                case .onionSkin:
+                    onionSkinContent
+                }
             }
+            .padding()
         }
         .onChange(of: store.selectedFile) {
             zoomPanState.reset()
         }
-        .padding()
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                StatusView(
-                    status: store.selectedFile?.status,
-                    previousState: store.previousVersionState,
-                    currentState: store.currentVersionState,
-                    viewMode: store.viewMode,
-                    blend: store.blend,
-                    onBlendChanged: { store.send(.setBlend($0)) }
-                )
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    store.send(.toggleAutoBlend)
+                } label: {
+                    Image(systemName: store.isAutoBlending ? "pause.fill" : "play.fill")
+                        .font(.headline)
+                        .padding()
+                }
+                .disabled(!store.viewMode.blendable)
             }
 
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .principal) {
+                if let path = store.selectedFile?.path {
+                    Text(URL(fileURLWithPath: path).lastPathComponent)
+                        .font(.headline)
+                        .frame(alignment: .center)
+                }
+            }
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                Spacer()
                 Picker("View Mode", selection: Binding(
                     get: { store.viewMode },
                     set: { store.send(.setViewMode($0)) }
