@@ -38,9 +38,8 @@ struct StatusView: View {
                                 .hidden()
                         }
                         .font(.headline)
-                        if let size = currentState?.size {
-                            sizeLabel(size: size)
-                        }
+                        sizeLabel(size: currentState?.size ?? .zero)
+                            .opacity(currentState?.size == nil ? 0 : 1)
                     }
                 }
             case .deleted:
@@ -58,9 +57,8 @@ struct StatusView: View {
                                 .hidden()
                         }
                         .font(.headline)
-                        if let size = previousState?.size {
-                            sizeLabel(size: size)
-                        }
+                        sizeLabel(size: previousState?.size ?? .zero)
+                            .opacity(previousState?.size == nil ? 0 : 1)
                     }
                 }
             default:
@@ -68,10 +66,8 @@ struct StatusView: View {
                 VStack {
                     Text("Before")
                         .font(.headline)
-                    if let size = previousState?.size {
-                        sizeLabel(size: size)
-                            .foregroundColor(.secondary)
-                    }
+                    sizeLabel(size: previousState?.size ?? .zero)
+                        .opacity(previousState?.size == nil ? 0 : 1)
                 }
 
                 Spacer()
@@ -79,9 +75,8 @@ struct StatusView: View {
                 VStack {
                     Text("After")
                         .font(.headline)
-                    if let size = currentState?.size {
-                        sizeLabel(size: size)
-                    }
+                    sizeLabel(size: currentState?.size ?? .zero)
+                        .opacity(currentState?.size == nil ? 0 : 1)
                 }
 
                 Spacer()
@@ -96,10 +91,8 @@ struct StatusView: View {
                 VStack(alignment: .trailing) {
                     Text("Before")
                         .font(.system(size: 12, weight: .semibold))
-                    if let size = previousState?.size {
-                        sizeLabel(size: size)
-                            .foregroundColor(.secondary)
-                    }
+                    sizeLabel(size: previousState?.size ?? .zero)
+                        .opacity(previousState?.size == nil ? 0 : 1)
                 }
 
                 CustomSlider(value: Binding(get: { blend }, set: onBlendChanged))
@@ -111,9 +104,8 @@ struct StatusView: View {
                 VStack(alignment: .leading) {
                     Text("After")
                         .font(.system(size: 12, weight: .semibold))
-                    if let size = currentState?.size {
-                        sizeLabel(size: size)
-                    }
+                    sizeLabel(size: currentState?.size ?? .zero)
+                        .opacity(currentState?.size == nil ? 0 : 1)
                 }
             }
         } else {
