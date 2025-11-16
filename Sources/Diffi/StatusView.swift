@@ -71,6 +71,7 @@ struct StatusView: View {
                 }
 
                 Spacer()
+                Spacer()
 
                 VStack {
                     Text("After")
@@ -97,7 +98,7 @@ struct StatusView: View {
 
                 CustomSlider(value: Binding(get: { blend }, set: onBlendChanged))
                     .frame(width: 200)
-                    .padding(.horizontal)
+                    .padding(.horizontal, 8)
                     .disabled(isAutoBlending)
                     .animation(.easeInOut(duration: 0.15), value: isAutoBlending)
 
