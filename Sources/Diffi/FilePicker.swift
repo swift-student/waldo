@@ -14,6 +14,11 @@ struct FilePicker: View {
                         .truncationMode(.middle)
                 }
                 .id(file.path)
+                .contextMenu {
+                    Button("Show in Finder") {
+                        store.send(.showInFinder(file))
+                    }
+                }
             }
             .navigationTitle("Files")
             // TODO: Make keys configurable

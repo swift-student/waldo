@@ -18,7 +18,7 @@ public struct AppFeature {
         public init() {
             _selectedFile = Shared(value: nil)
             _repoFolder = Shared(value: nil)
-            filePickerFeature = FilePickerFeature.State(selectedFile: _selectedFile)
+            filePickerFeature = FilePickerFeature.State(selectedFile: _selectedFile, repoFolder: _repoFolder)
             diffFeature = DiffFeature.State(repoFolder: _repoFolder)
             imageDiffFeature = ImageDiffFeature.State(selectedFile: _selectedFile, repoFolder: _repoFolder)
         }

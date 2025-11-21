@@ -8,16 +8,23 @@ public struct FilePickerFeature {
     public struct State: Equatable {
         var files: [PickableFile]
         @Shared var selectedFile: PickableFile?
+        @Shared var repoFolder: URL?
 
-        public init(files: [PickableFile] = [], selectedFile: Shared<PickableFile?> = Shared(value: nil)) {
+        public init(
+            files: [PickableFile] = [],
+            selectedFile: Shared<PickableFile?> = Shared(value: nil),
+            repoFolder: Shared<URL?> = Shared(value: nil)
+        ) {
             self.files = files
             _selectedFile = selectedFile
+            _repoFolder = repoFolder
         }
     }
 
     public enum Action: Equatable {
         case navigateUp
         case navigateDown
+        case showInFinder(PickableFile)
         case userSelectedFile(PickableFile?)
     }
 
@@ -54,6 +61,12 @@ public struct FilePickerFeature {
                 }
 
                 state.$selectedFile.withLock { $0 = newSelection }
+                return .none
+
+            case let .showInFinder(file):
+                guard let repoFolder = state.repoFolder else { return .none }
+                let fileURL = repoFolder.appendingPathComponent(file.path)
+                NSWorkspace.shared.activateFileViewerSelecting([fileURL])
                 return .none
 
             case let .userSelectedFile(file):
